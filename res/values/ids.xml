@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<item name="verify_button_true" type="id"/>
+	<item name="verify_button_false" type="id"/>
+	<item name="main_screen_text" type="id"/>
+
+</resources>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">Darknet Connector</string>
+    <string name="main_screen_notconfigured">Please connect to the home network either by Wi-Fi or USB</string>
+    <string name="main_screen_connect1">Do you want to make</string>
+    <string name="main_screen_connect2">as the home freenet node</string>
+    <string name="main_screen_change">Do you want to change your home freenet node to</string>
+    <string name="main_screen_configured">In Sync with </string>
+    <string name="verify_true">Accept </string>
+    <string name="verify_false">Reject </string>
+    <string name="menu_settings">Settings</string>
+
+</resources>
