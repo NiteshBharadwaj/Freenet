@@ -3,5 +3,14 @@
 	<item name="verify_button_true" type="id"/>
 	<item name="verify_button_false" type="id"/>
 	<item name="main_screen_text" type="id"/>
-
+	<item name="exchange_noderef_button" type="id"/>
+	<item name="node_configured_layout" type="id"/>
+	<item name="authorization_layout" type="id"/>
+	<item name="wifi_exchange_layout" type="id"/>
+	<item name="exchange_options_text" type="id"/>
+	<item name="authorization_text" type="id"/>
+	<item name="wifi_button" type="id"/>
+	<item name="QR_button" type="id"/>
+	<item name="bluetooth_button" type="id"/>
+	
 </resources>

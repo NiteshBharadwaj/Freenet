@@ -17,12 +17,14 @@ import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.util.Log;
 
 public class MDNSReceiver extends Activity{
 	
     	private String name;
     	private String ip;
     	private int port;
+    	private static String pin;
     	
     	@Override
     	protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +41,8 @@ public class MDNSReceiver extends Activity{
     			this.name = extras.getString("name");
         		this.ip = extras.getString("ip");
         		this.port = extras.getInt("port", 8888);
+        		this.pin = extras.getString("pin");
+        		Log.d("dumb",pin);
     		}
     		
     		if (FProxyConnector.configured && HomeNode.getName().equals(name)) {
@@ -69,7 +73,8 @@ public class MDNSReceiver extends Activity{
 									e.printStackTrace();
 								}
 	        		 		}
-
+	        		 		Log.d("dumb",ip);
+	        		 		Log.d("port",""+port);
 	        		 		boolean done = pullnoderef(ip, port);
 	        		 		if (done) {
 	        		 			FProxyConnector.updatePropertiesFile(name);
@@ -77,6 +82,9 @@ public class MDNSReceiver extends Activity{
 	        		 			FProxyConnector.configured = true;
 	        		 		}
 	        		 	}
+	        	 else {
+	        		 MainFragment.setState(MainFragment.FRAGMENT_STATE_UNINITIALIZED);
+	        	 }
 	             finish();
 	        	 }
 	            
@@ -89,11 +97,12 @@ public class MDNSReceiver extends Activity{
 			Intent i = new Intent(this,AuthorizationActivity.class);
 			i.putExtra("text", text);
 			i.putExtra("code", 100);
+			i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			this.startActivityForResult(i,100);
 		}
 		public static boolean pullnoderef(String ip,int port) {
 			boolean done = false;
-	    	String uri = "http://" +ip + ":" +port +"/addfriend/myref.txt";
+	    	/*String uri = "http://" +ip + ":" +port +"/addfriend/myref.txt";
 	    	File fl = new File(FProxyConnector.nodeRefFileName);
 		    try {
 
@@ -103,7 +112,22 @@ public class MDNSReceiver extends Activity{
 		    }
 		    catch(IOException e) {
 		    	e.printStackTrace();
-		    }
+		    }*/
+			File fl = new File(FProxyConnector.nodeRefFileName);
+			DarknetAppClient context = new DarknetAppClient(ip,port,true,FProxyConnector.activity.getApplicationContext(),pin);
+			boolean connected = context.startConnection();
+			String ref;
+			try {
+				if (connected) {
+					ref = context.pullHomeReference();
+					FileUtils.writeStringToFile(fl, ref);
+					context.closeConnection();
+					done = true;
+				}
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 		    return done;
 		}
 

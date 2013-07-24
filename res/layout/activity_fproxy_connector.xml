@@ -14,4 +14,14 @@
         android:text="@string/main_screen_notconfigured"
         android:textSize="22dp" />
 
+    <Button
+        android:id="@id/exchange_noderef_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@id/main_screen_text"
+        android:layout_marginLeft="34dp"
+        android:layout_marginTop="70dp"
+        android:text="@string/exchange" />
+
 </RelativeLayout>

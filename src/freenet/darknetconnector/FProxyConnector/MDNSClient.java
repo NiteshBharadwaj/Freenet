@@ -7,6 +7,7 @@ package freenet.darknetconnector.FProxyConnector;
  */
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -23,12 +24,13 @@ import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Handler;
+import android.util.Log;
 
 
 public class MDNSClient {
 	WifiManager.MulticastLock lock;
 	Handler handler = new android.os.Handler();
-	private String type = "_http._tcp.local.";
+	private String type = "_darknetAppServer._tcp.local.";
     private JmDNS jmdns = null;
     private ServiceListener listener = null;
     private Context context;
@@ -120,24 +122,40 @@ public class MDNSClient {
 		                    if (ev.getInfo().getInetAddresses() != null && ev.getInfo().getInetAddresses().length > 0) {
 		                        additions = ev.getInfo().getInetAddresses()[0].getHostAddress();
 		                    }
-		                    byte[] go = ev.getInfo().getTextBytes();  // This contains the publickey, signature and a pointer
+		                    byte[] signal = ev.getInfo().getTextBytes();  // This contains the publickey, signature and a pointer
 		                    byte[] signature = null;
 		                    byte[] publickey = null;
-		                    int point = go[go.length-1]; //Extract Pointer
-                            signature = new byte[point];  //Initialize Variables
-                            publickey = new byte[go.length-signature.length-1];
-                            for (int i=0;i!=point;i++) {
-                                signature[i] = go[i]; //Signature is obtained
-                            }
-                            for (int i=point;i!=go.length-1;i++) {
-                                publickey[i-point] = go[i]; //Public Key is obtained
-                            }  
-		                    boolean verification = DigitalSignature.verify(ev.getInfo().getName(), signature, publickey);
+		                    byte[] pinBytes = null;
+		                    int signEndPointer = signal[signal.length-2]*16 + signal[signal.length-1];
+		                    int pubkeyEndPointer = signal[signal.length-4]*16 + signal[signal.length-3];
+		                    signature = new byte[signEndPointer];
+		                    publickey = new byte[pubkeyEndPointer-signEndPointer];
+		                    pinBytes = new byte[signal.length-pubkeyEndPointer-4];
+		                    for (int i=0;i!=signEndPointer;i++) {
+		                        signature[i] = signal[i];
+		                    }
+		                    for (int i=signEndPointer;i!=pubkeyEndPointer;i++) {
+		                        publickey[i-signEndPointer] = signal[i];
+		                    }
+		                    for (int i=pubkeyEndPointer;i!=signal.length-4;i++) {
+		                        pinBytes[i-pubkeyEndPointer] = signal[i];
+		                    }
+		                    boolean verification = ECDSA.verify(ev.getInfo().getName(), signature, publickey);
+		                    Log.d("dumb","+verification" + ev.getInfo().getName());
+		                    String pin = "";
+							try {
+								pin = new String(pinBytes,"UTF-8");
+								Log.d("dumb","pin  "+pin);
+							} catch (UnsupportedEncodingException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
 		                    if (verification)  {		                    	
 		                    	Map<String,String> map = new HashMap<String,String>();
 		                    	map.put("name",ev.getInfo().getName());
 		        			 	map.put("ip",additions);
 		        			 	map.put("port",String.valueOf(ev.getInfo().getPort()));
+		        			 	map.put("pin", pin);
 		                    	dumb(map);		                    	
 		                    }
 		                }
@@ -164,6 +182,7 @@ public class MDNSClient {
 			 i.putExtra("name", (String)map.get("name"));
 			 i.putExtra("ip",(String)map.get("ip"));
 			 i.putExtra("port",Integer.parseInt((String) map.get("port")));
+			 i.putExtra("pin",map.get("pin"));
 			 FProxyConnector.activity.startActivity(i);
 		 }
 		 

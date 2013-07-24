@@ -18,21 +18,20 @@ import android.widget.Button;
 import android.widget.TextView;
 
 public class AuthorizationActivity extends Activity {
-	
 	private static int code;
-	private static Activity activity;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);		
-		setContentView(R.layout.activity_fproxy_authorize);
-		this.activity = this;
+		super.onCreate(savedInstanceState);
+		//setContentView(R.layout.main_layout);
 		Bundle extras = getIntent().getExtras();
 		String text = extras.getString("text");
 		code = extras.getInt("code", 100);
-		TextView maintext = (TextView) findViewById(R.id.main_screen_text1);
+		Activity activity = MainFragment.activity;
+		MainFragment.setState(MainFragment.FRAGMENT_STATE_AUTHORIZATION);
+		TextView maintext = (TextView) activity.findViewById(R.id.authorization_text);
 				maintext.setText(text);
-		Button verify_true = (Button) this.findViewById(R.id.verify_button_true); 
-		Button verify_false = (Button) this.findViewById(R.id.verify_button_false);
+		Button verify_true = (Button) activity.findViewById(R.id.verify_button_true); 
+		Button verify_false = (Button) activity.findViewById(R.id.verify_button_false);
 		verify_true.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {
@@ -44,14 +43,14 @@ public class AuthorizationActivity extends Activity {
 			public void onClick(View view) {
 				returnResult(false);
 			}
-		});
+		});		
 	}
 	
-	private static void returnResult(boolean bool) {
+	private void returnResult(boolean bool) {
 		Intent in = new Intent();
 		in.putExtra("check", bool);
-		activity.setResult(code,in);
-		activity.finish();
+		this.setResult(code,in);
+		this.finish();
 	}
 
 }

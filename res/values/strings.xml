@@ -9,6 +9,12 @@
     <string name="main_screen_configured">In Sync with </string>
     <string name="verify_true">Accept </string>
     <string name="verify_false">Reject </string>
+    <string name="exchange">Exchange Nodereference</string>
     <string name="menu_settings">Settings</string>
-
+	<string name="exchange_options">Exchange darknet node references via: </string>
+	<string name="authorization_text">Do you want to continue? </string>
+	<string name="wifi"> WIFI </string>
+	<string name="QR"> QRCode </string>
+	<string name="bluetooth"> Bluetooth </string>
+	<string name="prompt"> The app automatically synchronizes the node references when on home network </string>
 </resources>

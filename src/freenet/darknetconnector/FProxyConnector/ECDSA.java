@@ -1,13 +1,13 @@
+/*
+ * To change this template, choose Tools | Templates
+ * and open the template in the editor.
+ */
 package freenet.darknetconnector.FProxyConnector;
 
-/**
- * A simple class to provide methods to either sign a text with DSA provided by BouncyCastle
- * Used here only to verify the DSA signature of the received MDNS
- * @author Illutionist
- */
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -33,13 +33,15 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
-
-public class DigitalSignature {
+/**
+ *
+ * @author Chinnu
+ */
+public class ECDSA {
     private static PublicKey publickey;
     private static PrivateKey privatekey;
     private static boolean generated = false;
     private static Properties prop = new Properties();    
-    
     public static byte[] getPublicKey() throws UnsupportedEncodingException  {
         byte[] key = null;
         if (!generated) {
@@ -57,29 +59,29 @@ public class DigitalSignature {
         }
         if (generated){
                 try { 
-                    Signature dsa = Signature.getInstance("SHA1withDSA", "BC");
+                    Signature dsa = Signature.getInstance("SHA1withECDSA", "BC");
                     dsa.initSign(privatekey);
                     byte[] buf = text.getBytes("UTF-8");
                     dsa.update(buf, 0, buf.length);
                     signature = dsa.sign();
                     sign = new String(signature,"UTF-8");
                 } catch (NoSuchAlgorithmException ex) {
-                    Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (NoSuchProviderException ex) {
-                    Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (InvalidKeyException ex) {
-                    Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (SignatureException ex) {
-                    Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+                Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
             }
             }
         return signature;
     }
     public static void initialize() {
         try {
-            File file = new File("DSAconfig.properties");
+            File file = new File("ECDSAconfig.properties");
             if (!file.exists()) {
                 file.createNewFile();              
                 prop.load(new FileInputStream(file));
@@ -91,21 +93,21 @@ public class DigitalSignature {
             }
         }
         catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchProviderException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     private static void generateProperties() throws NoSuchAlgorithmException, NoSuchProviderException, UnsupportedEncodingException, IOException {
-        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("DSA", "BC");
+        KeyPairGenerator keyGen = KeyPairGenerator.getInstance("EC");
         SecureRandom random = SecureRandom.getInstance("SHA1PRNG", "SUN");
-        keyGen.initialize(1024, random);
+        keyGen.initialize(256, random);
         KeyPair pair = keyGen.generateKeyPair();
         privatekey = pair.getPrivate();
         publickey = pair.getPublic();
@@ -116,7 +118,7 @@ public class DigitalSignature {
         prop.setProperty("DSAprivatekey",pri);
         prop.setProperty("DSApublickey",pub);
         generated = true;
-        prop.store(new FileOutputStream("DSAconfig.properties"), null);
+        prop.store(new FileOutputStream("ECDSAconfig.properties"), null);
         
     }
     private static void pullProperties() throws UnsupportedEncodingException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeySpecException, IOException {
@@ -130,7 +132,7 @@ public class DigitalSignature {
         System.out.println(publ);
         PKCS8EncodedKeySpec priKeySpec = new PKCS8EncodedKeySpec(pri);
         X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(pub);
-        KeyFactory keyFactory = KeyFactory.getInstance("DSA", "BC");
+        KeyFactory keyFactory = KeyFactory.getInstance("EC", "BC");
         privatekey =keyFactory.generatePrivate(priKeySpec);
         publickey =keyFactory.generatePublic(pubKeySpec);
         generated = true;
@@ -138,30 +140,31 @@ public class DigitalSignature {
     public static boolean verify(String data,byte[] signature,byte[] publicKey) {
         boolean verify = false;
         try {
-            Security.addProvider(new BouncyCastleProvider());
+        	Security.addProvider(new BouncyCastleProvider());
             X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(publicKey);
-            KeyFactory keyFactory = KeyFactory.getInstance("DSA", "BC");
+            KeyFactory keyFactory = KeyFactory.getInstance("EC", "BC");
             PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
             byte[] buf = data.getBytes("UTF-8");
-            Signature sig = Signature.getInstance("SHA1withDSA", "BC");
+            Signature sig = Signature.getInstance("SHA1withECDSA", "BC");
             sig.initVerify(pubKey);
             sig.update(buf, 0,buf.length);
             verify = sig.verify(signature);
         } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (NoSuchProviderException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidKeySpecException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (InvalidKeyException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (SignatureException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(DigitalSignature.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(ECDSA.class.getName()).log(Level.SEVERE, null, ex);
         }
         return verify;
     }
+    
 
     
 }

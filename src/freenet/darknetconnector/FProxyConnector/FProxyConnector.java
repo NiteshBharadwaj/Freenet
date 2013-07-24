@@ -16,7 +16,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Log;
 import android.view.Menu;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.TextView;
 
 public class FProxyConnector extends Activity {
@@ -33,12 +38,17 @@ public class FProxyConnector extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_fproxy_connector);
+		setContentView(R.layout.main_layout);
 		context = getBaseContext();
 		activity = this;	
 		initialize();
 		mdnsClient = new MDNSClient(context);
 		mdnsClient.startListening();
+		if (configured) {
+			setListeners();
+		}
+		Log.d("dumb","notified");
+
 	}
 	
 	protected void onPause() {
@@ -89,10 +99,40 @@ public class FProxyConnector extends Activity {
 				prop.setProperty("homeNodeName", name);
 				FProxyConnector.configured = true;
 				prop.store(new FileOutputStream(pfile), null);
+				TextView text = (TextView) activity.findViewById(R.id.main_screen_text);
+				text.setText(activity.getString(R.string.main_screen_configured)+" " +name);
+				setListeners();
 			}
 		}
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+	}
+	public static void setListeners() {
+		MainFragment.setState(MainFragment.FRAGMENT_STATE_OPTIONS);
+		View view = MainFragment.view;
+		Button wifi_button = (Button) view.findViewById(R.id.wifi_button);
+		Button QR_button = (Button) view.findViewById(R.id.QR_button);
+		Button bluetooth_button = (Button) view.findViewById(R.id.bluetooth_button);
+		wifi_button.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				//Intent i = new Intent(FProxyConnector.this,AuthorizationActivity.class);
+				//activity.startActivityForResult(i,100);
+				Log.d("dumb","wifi");
+			}
+		});
+		QR_button.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				Log.d("dumb","qr");
+			}
+		});
+		bluetooth_button.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View view) {
+				Log.d("dumb","bluetooth");
+			}
+		});
 	}
 }
