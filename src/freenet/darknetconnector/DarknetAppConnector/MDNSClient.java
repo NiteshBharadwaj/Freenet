@@ -1,4 +1,4 @@
-package freenet.darknetconnector.FProxyConnector;
+package freenet.darknetconnector.DarknetAppConnector;
 
 /**
  * A helper class with  methods to start and stop MDNS Discovery
@@ -91,6 +91,7 @@ public class MDNSClient {
          * If signature matches, raise Intent through MDNSReceiver Class
          * TODO: Verify if the name contains Freenet. If it doesn't ignore the broadcast instead of signature verification
          * TODO: Change the dumb function to do the same task onPostExecute 
+         * TODO: Exception Handling
          * @see android.os.AsyncTask#doInBackground(Params[])
          */
 		@Override
@@ -140,7 +141,7 @@ public class MDNSClient {
 		                    for (int i=pubkeyEndPointer;i!=signal.length-4;i++) {
 		                        pinBytes[i-pubkeyEndPointer] = signal[i];
 		                    }
-		                    boolean verification = ECDSA.verify(ev.getInfo().getName(), signature, publickey);
+		                    
 		                    Log.d("dumb","+verification" + ev.getInfo().getName());
 		                    String pin = "";
 							try {
@@ -150,6 +151,13 @@ public class MDNSClient {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
+							String data2verify = ev.getInfo().getName()+pin;
+							Log.d("dumb",data2verify);
+							boolean verification = ECDSA.verify(data2verify, signature, publickey);
+							String[] split = pin.split("pin -=");
+							String[] splite = split[1].split("=-");
+							pin = splite[0];
+							Log.d("dumb",pin);
 		                    if (verification)  {		                    	
 		                    	Map<String,String> map = new HashMap<String,String>();
 		                    	map.put("name",ev.getInfo().getName());
@@ -183,7 +191,7 @@ public class MDNSClient {
 			 i.putExtra("ip",(String)map.get("ip"));
 			 i.putExtra("port",Integer.parseInt((String) map.get("port")));
 			 i.putExtra("pin",map.get("pin"));
-			 FProxyConnector.activity.startActivity(i);
+			 DarknetAppConnector.activity.startActivity(i);
 		 }
 		 
      }

@@ -1,5 +1,9 @@
-package freenet.darknetconnector.FProxyConnector;
-
+package freenet.darknetconnector.DarknetAppConnector;
+/**
+ * A wifip2p activity that can be used to exchange noderefs between two mobiles using WiFiDirect
+ * @author Illutionist
+ */
+import freenet.darknetconnector.FProxyConnector.R;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;

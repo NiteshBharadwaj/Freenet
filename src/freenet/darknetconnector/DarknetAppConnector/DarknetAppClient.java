@@ -1,15 +1,23 @@
-package freenet.darknetconnector.FProxyConnector;
-
+package freenet.darknetconnector.DarknetAppConnector;
+/**
+ * A client to talk to the DarknetAppServer(on homeNode) in terms of sockets
+ * @author Illutionist
+ */
 import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
+import java.util.Properties;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -46,17 +54,7 @@ public class DarknetAppClient {
 		this.context = context;
 		this.pin = pin;
 	}
-    private static String byteToHex(final byte[] hash)
-    {
-        Formatter formatter = new Formatter();
-        for (byte b : hash)
-        {
-            formatter.format("%02x", b);
-        }
-        String result = formatter.toString();
-        formatter.close();
-        return result;
-    }
+
     public void closeConnection() throws IOException {
     	out.write((REQUEST_CLOSE_CONNECTION+'\n').getBytes("UTF-8"));
     	if (socket!=null && !socket.isClosed()) {
@@ -76,11 +74,21 @@ public class DarknetAppClient {
 			if (SSLEnabled) {
 				TrustManager[] trustManagers = new TrustManager[1];
 				trustManagers[0] = new PinningTrustManager(SystemKeyStore.getInstance(context), new String[] {pin}, 0);
+				//TrustManager if Pinning Trust Manager is not to be used
 				/*TrustManager[] trustManagers = new TrustManager[] { new X509TrustManager() {
 
 				@Override
 				public void checkClientTrusted(
 						java.security.cert.X509Certificate[] chain, String authType)
+						throws java.security.cert.CertificateException {
+					
+					}
+					
+				}
+
+				@Override
+				public void checkServerTrusted(
+						java.security.cert.X509Certificate[] chain, String arg1)
 						throws java.security.cert.CertificateException {
 					for(java.security.cert.X509Certificate certificate : chain) {
 						certificate.getPublicKey().getEncoded();
@@ -101,15 +109,6 @@ public class DarknetAppClient {
 			            String checkPin= formatter.toString();
 			            formatter.close();
 			            if (checkPin.equals(pin)) return;
-					}
-					
-				}
-
-				@Override
-				public void checkServerTrusted(
-						java.security.cert.X509Certificate[] chain, String arg1)
-						throws java.security.cert.CertificateException {
-					// TODO Auto-generated method stub
 					
 				}
 
@@ -130,7 +129,6 @@ public class DarknetAppClient {
 	        input = new LineReadingInputStream(is);
 	        out = socket.getOutputStream();
 	        done = true;
-	        Log.d("dumb","This has started");
 		}
 		catch(IOException e) {
 			e.printStackTrace();
@@ -149,8 +147,23 @@ public class DarknetAppClient {
 		out.write((REQUEST_HOME_REFERENCE+'\n').getBytes("UTF-8"));
 		String sentence2;
 		while (!(sentence2 = input.readLine(32768, 128, true)).isEmpty()) {
-			homeref = homeref.concat(sentence2);
+			homeref = homeref.concat(sentence2+'\n');
 		}
 		return homeref;
+	}
+	public void pushReferences() throws IOException {
+		File file = new File(DarknetAppConnector.peerNodeRefsFileName);
+		if (!file.exists()) return;
+		Properties prop = new Properties();
+		prop.load(new FileInputStream(file));
+		out.write((REQUEST_PUSH_REFERENCE+'\n').getBytes("UTF-8"));
+		String count = String.valueOf(DarknetAppConnector.newDarknetPeersCount);
+		out.write((count+'\n').getBytes("UTF-8"));
+		int n = Integer.parseInt(count);
+		for (int i=1;i<=n;i++) {
+			String nodereference = prop.getProperty("newPeers" + i);
+			out.write((nodereference+'\n').getBytes("UTF-8"));
+		}
+		Log.d("dumb","written");
 	}
 }

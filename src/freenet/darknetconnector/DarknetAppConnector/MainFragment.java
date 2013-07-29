@@ -1,5 +1,11 @@
-package freenet.darknetconnector.FProxyConnector;
-
+package freenet.darknetconnector.DarknetAppConnector;
+/**
+ * The main app screen is divided into two halfs. with upper half displaying important text information
+ * This is the lower half which handles all the user interactions (button clicks etc.)
+ * Use this fragment itself for all the activities' UI.. Add the layout for an activity as an xml and call it a state. This way states can be reused 
+ * @author Illutionist
+ */
+import freenet.darknetconnector.FProxyConnector.R;
 import android.app.Activity;
 import android.app.Fragment;
 import android.os.Bundle;

@@ -1,8 +1,8 @@
 /*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
+ * This is used to verify the EC signature. 
+ * Though this app doesn't sign anything as of now, it verifies the signature.
  */
-package freenet.darknetconnector.FProxyConnector;
+package freenet.darknetconnector.DarknetAppConnector;
 
 
 import java.io.File;
@@ -35,7 +35,7 @@ import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
 /**
  *
- * @author Chinnu
+ * @author Illutionist
  */
 public class ECDSA {
     private static PublicKey publickey;

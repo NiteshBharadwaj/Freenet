@@ -1,8 +1,9 @@
-package freenet.darknetconnector.FProxyConnector;
+package freenet.darknetconnector.DarknetAppConnector;
 
 /**
  * A MDNS receiver class that receives MDNS broadcasts from the Asynchronous background task MDNSClient
- * It raises intent asking if home node is to be changed or if to be associated with a home node for the first time
+ * It raises intent asking if home node is to be changed or if to be associated with a home node for the first time as soon as it discovers a broadcast
+ * If already associated with a homeNode, it automatically synchronizes the nodereferences 
  * TODO: Make the node reference pull asynchronous and remove the security override
  * @author Illutionist
  */
@@ -12,6 +13,8 @@ import java.io.IOException;
 import java.net.URL;
 
 import org.apache.commons.io.FileUtils;
+
+import freenet.darknetconnector.FProxyConnector.R;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -45,14 +48,14 @@ public class MDNSReceiver extends Activity{
         		Log.d("dumb",pin);
     		}
     		
-    		if (FProxyConnector.configured && HomeNode.getName().equals(name)) {
+    		if (DarknetAppConnector.configured && HomeNode.getName().equals(name)) {
     			//We reach here if newly discovered MFNS is same as our homenode
-				//pullnoderef(ip,port);
+				pullnoderef(ip,port);
 				finish();
 			}
 			else {
 				boolean change = false;
-				if (FProxyConnector.configured)
+				if (DarknetAppConnector.configured)
 					change = true;
 				raiseIntent(change);
 			}
@@ -65,7 +68,7 @@ public class MDNSReceiver extends Activity{
 	        	
 	        	Boolean result = data.getBooleanExtra("check", false);
 	        	 if (result) {
-	        		 		File file = new File(FProxyConnector.nodeRefFileName);
+	        		 		File file = new File(DarknetAppConnector.nodeRefFileName);
 	        		 		if (!file.exists()) {
 	        		 			try {
 									file.createNewFile();
@@ -77,9 +80,9 @@ public class MDNSReceiver extends Activity{
 	        		 		Log.d("port",""+port);
 	        		 		boolean done = pullnoderef(ip, port);
 	        		 		if (done) {
-	        		 			FProxyConnector.updatePropertiesFile(name);
+	        		 			DarknetAppConnector.updatePropertiesFile(name);
 	        		 			HomeNode.setName(name);
-	        		 			FProxyConnector.configured = true;
+	        		 			DarknetAppConnector.configured = true;
 	        		 		}
 	        		 	}
 	        	 else {
@@ -91,7 +94,7 @@ public class MDNSReceiver extends Activity{
 	        }
 
 		public void raiseIntent(boolean change) {
-			Activity activity = FProxyConnector.activity;
+			Activity activity = DarknetAppConnector.activity;
 			String text  = this.getString(R.string.main_screen_connect1)+" " + name+ " " + activity.getString(R.string.main_screen_connect2);
 			if (change) text = this.getString(R.string.main_screen_change)+" " + name;
 			Intent i = new Intent(this,AuthorizationActivity.class);
@@ -100,10 +103,11 @@ public class MDNSReceiver extends Activity{
 			i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
 			this.startActivityForResult(i,100);
 		}
+		
 		public static boolean pullnoderef(String ip,int port) {
 			boolean done = false;
 	    	/*String uri = "http://" +ip + ":" +port +"/addfriend/myref.txt";
-	    	File fl = new File(FProxyConnector.nodeRefFileName);
+	    	File fl = new File(DarknetAppConnector.nodeRefFileName);
 		    try {
 
 		    	URL dl = new URL(uri);
@@ -113,8 +117,8 @@ public class MDNSReceiver extends Activity{
 		    catch(IOException e) {
 		    	e.printStackTrace();
 		    }*/
-			File fl = new File(FProxyConnector.nodeRefFileName);
-			DarknetAppClient context = new DarknetAppClient(ip,port,true,FProxyConnector.activity.getApplicationContext(),pin);
+			File fl = new File(DarknetAppConnector.nodeRefFileName);
+			DarknetAppClient context = new DarknetAppClient(ip,port,true,DarknetAppConnector.activity.getApplicationContext(),pin);
 			boolean connected = context.startConnection();
 			String ref;
 			try {
@@ -128,6 +132,12 @@ public class MDNSReceiver extends Activity{
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			/*try {
+				context.pushReferences();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}*/
 		    return done;
 		}
 

@@ -1,14 +1,14 @@
-package freenet.darknetconnector.FProxyConnector;
+package freenet.darknetconnector.DarknetAppConnector;
 
 /**
  * A helper activity for making boolean requests to the User
  * Displays an activity with a text and two buttons 
  * @param an intent with a text and an integer code to identify the requester class
  * The requester must implement the onActivityResult
- * TODO: Change from activity to a much user friendly framework
  * @author Illutionist 
  */
 
+import freenet.darknetconnector.FProxyConnector.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

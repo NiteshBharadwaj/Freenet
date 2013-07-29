@@ -1,8 +1,9 @@
-package freenet.darknetconnector.FProxyConnector;
+package freenet.darknetconnector.DarknetAppConnector;
 
 /**
  * The main activity that starts when application is started
- * The application currently pulls Freenet node reference from fproxy if the updated plugin MDNSDiscovery is enabled 
+ * The application presently can pull/push nodereferences from a freenet node if the updated plugin MDNSDiscovery is enabled 
+ * Once it is configured with a freenet node, that particular node becomes its homeNode.
  * @author Illutionist
  */
 
@@ -11,6 +12,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
+
+import freenet.darknetconnector.FProxyConnector.R;
 
 import android.os.Bundle;
 import android.os.Environment;
@@ -24,16 +27,18 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class FProxyConnector extends Activity {
+public class DarknetAppConnector extends Activity {
 
+	// All static variables.. Should remain same for the whole application
 	public final static String propertiesFileName = Environment.getExternalStorageDirectory() + File.separator +"config.properties";
 	public final static String nodeRefFileName = Environment.getExternalStorageDirectory() + File.separator +"myref.txt"; 
+	public final static String peerNodeRefsFileName = Environment.getExternalStorageDirectory() + File.separator +"friendrefs.txt";
 	public static boolean configured = false;
 	private MDNSClient mdnsClient; 
 	private static Properties prop = new Properties(); 
 	private static Context context;
-	public static boolean mdnsCallReceived = false;
 	public static Activity activity;
+	public static int newDarknetPeersCount = 0;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +52,6 @@ public class FProxyConnector extends Activity {
 		if (configured) {
 			setListeners();
 		}
-		Log.d("dumb","notified");
 
 	}
 	
@@ -73,7 +77,7 @@ public class FProxyConnector extends Activity {
 	
 	private void initialize() {
 		File pfile = new File(propertiesFileName);	
-		File nfile = new File(nodeRefFileName);	
+		File nfile = new File(nodeRefFileName);
 		try {
 			if (!pfile.exists()) pfile.createNewFile();
 			if (!nfile.exists()) nfile.createNewFile();
@@ -85,10 +89,13 @@ public class FProxyConnector extends Activity {
 				text.setText(this.getString(R.string.main_screen_configured)+" " +name);
 				configured = true;
 			}
+			String count = prop.getProperty("newDarknetPeersCount");
+			if (count!=null && !count.isEmpty()) newDarknetPeersCount = Integer.parseInt(count);
 		}
 		catch(IOException e) {
 			e.printStackTrace();
 		}
+		
 	}
 	public static void updatePropertiesFile(String name) {
 		File pfile = new File(propertiesFileName);	
@@ -96,8 +103,8 @@ public class FProxyConnector extends Activity {
 			if (!pfile.exists()) pfile.createNewFile();
 			prop.load(new FileInputStream(pfile));
 			if (name!=null && name.length()!=0) {
-				prop.setProperty("homeNodeName", name);
-				FProxyConnector.configured = true;
+				prop.setProperty("homeNodeName", name);				
+				DarknetAppConnector.configured = true;
 				prop.store(new FileOutputStream(pfile), null);
 				TextView text = (TextView) activity.findViewById(R.id.main_screen_text);
 				text.setText(activity.getString(R.string.main_screen_configured)+" " +name);
@@ -108,7 +115,11 @@ public class FProxyConnector extends Activity {
 			e.printStackTrace();
 		}
 	}
+	
+	// Call this from any method to set the default screen with default listeners 
+	// Caution: Call only after the mobile is configured with a home node
 	public static void setListeners() {
+		if (!configured) return;
 		MainFragment.setState(MainFragment.FRAGMENT_STATE_OPTIONS);
 		View view = MainFragment.view;
 		Button wifi_button = (Button) view.findViewById(R.id.wifi_button);
@@ -116,8 +127,9 @@ public class FProxyConnector extends Activity {
 		Button bluetooth_button = (Button) view.findViewById(R.id.bluetooth_button);
 		wifi_button.setOnClickListener(new OnClickListener() {
 			@Override
+			// Reference Exchange support is disabled until bugs in WiFi Activity are fixed
 			public void onClick(View view) {
-				//Intent i = new Intent(FProxyConnector.this,AuthorizationActivity.class);
+				//Intent i = new Intent(DarknetAppConnector.this,WiFiActivity.class);
 				//activity.startActivityForResult(i,100);
 				Log.d("dumb","wifi");
 			}
