@@ -4,7 +4,6 @@ package freenet.darknetconnector.DarknetAppConnector;
  * A MDNS receiver class that receives MDNS broadcasts from the Asynchronous background task MDNSClient
  * It raises intent asking if home node is to be changed or if to be associated with a home node for the first time as soon as it discovers a broadcast
  * If already associated with a homeNode, it automatically synchronizes the nodereferences 
- * TODO: Make the node reference pull asynchronous and remove the security override
  * @author Illutionist
  */
 
@@ -33,12 +32,6 @@ public class MDNSReceiver extends Activity{
     	protected void onCreate(Bundle savedInstanceState) {
     		super.onCreate(savedInstanceState);
     		// This activity doesn't display anything on its own. It sends the text to be displayed along with options to authorizationactivity
-    		// Security override - If android SDK version is less than 9 (GingerBread 2.3), it works without overriding
-    		if (android.os.Build.VERSION.SDK_INT > 9) {
-    			StrictMode.ThreadPolicy policy = 
-    			        new StrictMode.ThreadPolicy.Builder().permitAll().build();
-    			StrictMode.setThreadPolicy(policy);
-    			}
     		Bundle extras = getIntent().getExtras();
     		if(extras !=null) {
     			this.name = extras.getString("name");
@@ -49,8 +42,12 @@ public class MDNSReceiver extends Activity{
     		}
     		
     		if (DarknetAppConnector.configured && HomeNode.getName().equals(name)) {
-    			//We reach here if newly discovered MFNS is same as our homenode
-				pullnoderef(ip,port);
+    			//We reach here if newly discovered MDNS is same as our homenode
+    			// TODO: Add pin to homenode and also check if the pins match
+    			if ((DarknetAppConnector.newDarknetPeersCount!=DarknetAppConnector.newDarknetPeersCountPrev && DarknetAppConnector.newDarknetPeersCount>0) || System.currentTimeMillis()-DarknetAppConnector.lastSynched > 60*60*60*1000) {
+    				Runnable r = new ConnectionThread(ip,port,pin,name,false);
+    				new Thread(r).start();
+    			}
 				finish();
 			}
 			else {
@@ -78,12 +75,8 @@ public class MDNSReceiver extends Activity{
 	        		 		}
 	        		 		Log.d("dumb",ip);
 	        		 		Log.d("port",""+port);
-	        		 		boolean done = pullnoderef(ip, port);
-	        		 		if (done) {
-	        		 			DarknetAppConnector.updatePropertiesFile(name);
-	        		 			HomeNode.setName(name);
-	        		 			DarknetAppConnector.configured = true;
-	        		 		}
+	        		 		Runnable r = new ConnectionThread(ip,port,pin,name,true);
+	        		 		new Thread(r).start();
 	        		 	}
 	        	 else {
 	        		 MainFragment.setState(MainFragment.FRAGMENT_STATE_UNINITIALIZED);
@@ -104,41 +97,49 @@ public class MDNSReceiver extends Activity{
 			this.startActivityForResult(i,100);
 		}
 		
-		public static boolean pullnoderef(String ip,int port) {
-			boolean done = false;
-	    	/*String uri = "http://" +ip + ":" +port +"/addfriend/myref.txt";
-	    	File fl = new File(DarknetAppConnector.nodeRefFileName);
-		    try {
-
-		    	URL dl = new URL(uri);
-		    	FileUtils.copyURLToFile(dl, fl);
-		    	done = true;
-		    }
-		    catch(IOException e) {
-		    	e.printStackTrace();
-		    }*/
-			File fl = new File(DarknetAppConnector.nodeRefFileName);
-			DarknetAppClient context = new DarknetAppClient(ip,port,true,DarknetAppConnector.activity.getApplicationContext(),pin);
-			boolean connected = context.startConnection();
-			String ref;
-			try {
-				if (connected) {
-					ref = context.pullHomeReference();
-					FileUtils.writeStringToFile(fl, ref);
-					context.closeConnection();
-					done = true;
-				}
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+		public class ConnectionThread implements Runnable {
+			
+			String ip;
+			int port;
+			String pin;
+			String name;
+			boolean firstTime =false;
+			public ConnectionThread(String ip, int port, String pin, String name, Boolean firstTime) {
+				this.ip = ip;
+				this.port = port;
+				this.pin = pin;
+				this.name = name;
+				this.firstTime = firstTime;
 			}
-			/*try {
-				context.pushReferences();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}*/
-		    return done;
+
+			@Override
+			public void run() {
+				boolean done = false;
+				File fl = new File(DarknetAppConnector.nodeRefFileName);
+				DarknetAppClient context = new DarknetAppClient(ip,port,true,DarknetAppConnector.activity.getApplicationContext(),pin);
+				boolean connected = context.startConnection();
+				String ref;
+				try {
+					if (connected) {
+						ref = context.pullHomeReference();
+						if (DarknetAppConnector.newDarknetPeersCount>0)
+							context.pushReferences();
+						FileUtils.writeStringToFile(fl, ref);
+						context.closeConnection();
+						done = true;
+					}
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				if (done && firstTime) {
+		 			DarknetAppConnector.updatePropertiesFile(name);
+		 			HomeNode.setName(name);
+		 			DarknetAppConnector.configured = true;
+		 		}
+				DarknetAppConnector.lastSynched = System.currentTimeMillis();
+			}
+			
 		}
 
 }

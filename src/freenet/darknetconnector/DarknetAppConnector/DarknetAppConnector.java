@@ -39,6 +39,8 @@ public class DarknetAppConnector extends Activity {
 	private static Context context;
 	public static Activity activity;
 	public static int newDarknetPeersCount = 0;
+	public static int newDarknetPeersCountPrev = 0;
+	public static long lastSynched = 0;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
