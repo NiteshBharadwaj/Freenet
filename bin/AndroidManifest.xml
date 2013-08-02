@@ -30,7 +30,7 @@
         android:label="@string/app_name"
         android:theme="@style/AppTheme" >
         <activity
-            android:name="freenet.darknetconnector.FProxyConnector.DarknetAppConnector"
+            android:name="freenet.darknetconnector.DarknetAppConnector.DarknetAppConnector"
             android:configChanges="orientation"
             android:label="@string/app_name" >
             <intent-filter>
@@ -38,7 +38,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name="AuthorizationActivity" 
+        <activity android:name="freenet.darknetconnector.DarknetAppConnector.AuthorizationActivity" 
             	  android:configChanges="orientation"
             	  android:theme="@android:style/Theme.NoDisplay"></activity>
         <activity android:name="freenet.darknetconnector.DarknetAppConnector.MDNSReceiver"

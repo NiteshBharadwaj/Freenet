@@ -17,6 +17,7 @@ import freenet.darknetconnector.FProxyConnector.R;
 
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;

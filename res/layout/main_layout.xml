@@ -20,7 +20,7 @@
         android:textSize="22dp" 
         android:textColor="@android:color/white"/>
         <fragment
-            class="freenet.darknetconnector.FProxyConnector.MainFragment"
+            class="freenet.darknetconnector.DarknetAppConnector.MainFragment"
             android:id="@+id/frag_detail"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
