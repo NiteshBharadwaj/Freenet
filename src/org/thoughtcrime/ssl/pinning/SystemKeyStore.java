@@ -32,7 +32,7 @@ import java.security.cert.X509Certificate;
 import java.util.Enumeration;
 import java.util.HashMap;
 
-import freenet.darknetconnector.FProxyConnector.R;
+import freenet.darknetconnector.DarknetAppConnector.R;
 
 /**
  * An interface to the system's trust anchors.  We're using our

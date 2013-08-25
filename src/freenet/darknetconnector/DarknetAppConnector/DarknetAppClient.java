@@ -16,6 +16,7 @@ import java.net.Socket;
 import java.security.KeyManagementException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.Security;
 import java.util.Formatter;
 import java.util.Properties;
 
@@ -27,10 +28,14 @@ import javax.security.cert.X509Certificate;
 
 
 import freenet.support.io.LineReadingInputStream;
+
+import org.spongycastle.jce.provider.BouncyCastleProvider;
 import org.thoughtcrime.ssl.pinning.PinningTrustManager;
 import org.thoughtcrime.ssl.pinning.SystemKeyStore;
 
 import android.content.Context;
+import android.content.Intent;
+import android.os.Message;
 import android.util.Log;
 
 public class DarknetAppClient {
@@ -39,6 +44,7 @@ public class DarknetAppClient {
     private static String REQUEST_PUSH_REFERENCE = "PushReference";
     private static String REQUEST_END_MESSAGE = "End";
     private static String REQUEST_CLOSE_CONNECTION = "CloseConnection";
+    private static String ASSERT_NODE_REFERENCES_RECEIVED = "ReceivedNodeReferences";
 	private String ip;
 	private int port;
 	private boolean SSLEnabled;
@@ -74,51 +80,7 @@ public class DarknetAppClient {
 			if (SSLEnabled) {
 				TrustManager[] trustManagers = new TrustManager[1];
 				trustManagers[0] = new PinningTrustManager(SystemKeyStore.getInstance(context), new String[] {pin}, 0);
-				//TrustManager if Pinning Trust Manager is not to be used
-				/*TrustManager[] trustManagers = new TrustManager[] { new X509TrustManager() {
-
-				@Override
-				public void checkClientTrusted(
-						java.security.cert.X509Certificate[] chain, String authType)
-						throws java.security.cert.CertificateException {
-					
-					}
-					
-				}
-
-				@Override
-				public void checkServerTrusted(
-						java.security.cert.X509Certificate[] chain, String arg1)
-						throws java.security.cert.CertificateException {
-					for(java.security.cert.X509Certificate certificate : chain) {
-						certificate.getPublicKey().getEncoded();
-						MessageDigest digest=null;
-						try {
-							digest = MessageDigest.getInstance("SHA1");
-						} catch (NoSuchAlgorithmException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-					    byte[] spki          = certificate.getPublicKey().getEncoded();
-					    byte[] pinBytes           = digest.digest(spki);
-					    Formatter formatter = new Formatter();
-			            for (byte b : pinBytes)
-			            {
-			                formatter.format("%02x", b);
-			            }
-			            String checkPin= formatter.toString();
-			            formatter.close();
-			            if (checkPin.equals(pin)) return;
-					
-				}
-
-				@Override
-				public java.security.cert.X509Certificate[] getAcceptedIssuers() {
-					// TODO Auto-generated method stub
-					return new java.security.cert.X509Certificate[] {};
-				}
-				}};*/
-				SSLContext sslContext = SSLContext.getInstance("SSL");
+				SSLContext sslContext = SSLContext.getInstance("TLS");
 				sslContext.init(null, trustManagers, null);
 				socket = sslContext.getSocketFactory().createSocket(InetAddress.getByName(ip),port );
 			}else {
@@ -131,12 +93,13 @@ public class DarknetAppClient {
 	        done = true;
 		}
 		catch(IOException e) {
+			onException();
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
+			onException();
 			e.printStackTrace();
 		} catch (KeyManagementException e) {
-			// TODO Auto-generated catch block
+			onException();
 			e.printStackTrace();
 		}
 		if (input==null || out==null || socket==null) done= false;
@@ -146,7 +109,7 @@ public class DarknetAppClient {
 		String homeref = "";
 		out.write((REQUEST_HOME_REFERENCE+'\n').getBytes("UTF-8"));
 		String sentence2;
-		while (!(sentence2 = input.readLine(32768, 128, true)).isEmpty()) {
+		while (!(sentence2 = input.readLine(32768, 128, true)).equals("")) {
 			homeref = homeref.concat(sentence2+'\n');
 		}
 		return homeref;
@@ -165,5 +128,18 @@ public class DarknetAppClient {
 			out.write((nodereference+'\n').getBytes("UTF-8"));
 		}
 		Log.d("dumb","written");
+		if (input.readLine(32768, 128, true).equals(ASSERT_NODE_REFERENCES_RECEIVED))  {
+			DarknetAppConnector.newDarknetPeersCount = 0;
+			DarknetAppConnector.updatedPeersCount();
+		}
+	}
+	
+	private void onException() {
+		// Try again in a minute
+		if (DarknetAppConnector.newDarknetPeersCount>0) {
+			Message msg2 = new Message();
+			msg2.arg1 = DarknetAppConnector.MESSAGE_TIMER_TASK;
+			DarknetAppConnector.handler.sendMessageDelayed(msg2, 60*1000);
+		}
 	}
 }

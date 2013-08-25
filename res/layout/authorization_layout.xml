@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    	xmlns:android="http://schemas.android.com/apk/res/android"
+        android:id="@id/authorization_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@android:color/background_dark"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@id/authorization_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="20dp"
+            android:layout_marginTop="20dp"
+            android:text="@string/authorization_text"
+            android:maxLines = "10"
+			android:scrollbars = "vertical"
+            android:textColor="@android:color/white"
+            android:textSize="22sp" />
+
+		<LinearLayout
+		    xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:background="@android:color/background_dark"
+		    android:gravity="center"
+		    android:orientation="horizontal" >
+
+			<Button
+			    android:id="@id/verify_button_true"
+			    android:layout_width="wrap_content"
+			   	android:layout_marginBottom="10dp"
+            	android:layout_marginTop="10dp"
+			    android:layout_height="wrap_content"
+			    android:focusable="false"
+			    android:text="@string/verify_true" />
+
+        	<Button
+        	    android:id="@id/verify_button_false"
+        	    android:layout_width="wrap_content"
+        	    android:layout_height="wrap_content"
+        	    android:layout_marginBottom="10dp"
+        	    android:layout_marginTop="10dp"
+        	    android:left="10dp"
+        	    android:focusable="false"
+        	    android:text="@string/verify_false" />
+		</LinearLayout>
+		
+</LinearLayout>

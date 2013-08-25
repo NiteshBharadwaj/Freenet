@@ -19,13 +19,15 @@
         android:text="@string/main_screen_notconfigured"
         android:textSize="22dp" 
         android:textColor="@android:color/white"/>
-        <fragment
-            class="freenet.darknetconnector.DarknetAppConnector.MainFragment"
-            android:id="@+id/frag_detail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <!-- Preview: layout=@layout/device_detail -->
-        </fragment>
+
+        <RelativeLayout
+            xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@id/fragment_view"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical" >
+        </RelativeLayout>
+        
     </LinearLayout>
 
 </LinearLayout>

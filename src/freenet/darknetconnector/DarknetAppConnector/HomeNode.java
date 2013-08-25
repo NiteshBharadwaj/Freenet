@@ -7,7 +7,6 @@ package freenet.darknetconnector.DarknetAppConnector;
 public class HomeNode {
 	
 	private static String name;
-	
 	public HomeNode(String nodeName) {
 		name = nodeName;
 	}

@@ -17,4 +17,7 @@
 	<string name="QR"> QRCode </string>
 	<string name="bluetooth"> Bluetooth </string>
 	<string name="prompt"> The app automatically synchronizes the node references when on home network </string>
+	
+	<string name="wifi_direct_title"> Put title here </string>
+	<string name="bluetooth_title"> Put title here </string>
 </resources>

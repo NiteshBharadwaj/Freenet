@@ -12,6 +12,8 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
@@ -35,27 +37,18 @@ public class MDNSClient {
     private ServiceListener listener = null;
     private Context context;
     private WifiManager wifi;
-	
+	public static Timer timer;
     public MDNSClient(Context context) {
     	this.context = context;
     	wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         lock = wifi.createMulticastLock("lock");
         lock.setReferenceCounted(true);
+        timer = new Timer();
 	}
     
     public void startListening() {
     	//Start a thread that listens asynchronously for MDNS broadcasts
-    	final Runnable r = new Runnable()
-    	{
-    		@Override
-    	    public void run() 
-    	    {
-    	    	new AsynchronousExecutor().execute(jmdns); 	
-    	    }
-    	};
-
-    	new Thread(r).start();
-    	
+    	new AsynchronousExecutor().execute(jmdns); 	
     }
     
     public void stopListening() {
@@ -154,17 +147,14 @@ public class MDNSClient {
 							String data2verify = ev.getInfo().getName()+pin;
 							Log.d("dumb",data2verify);
 							boolean verification = ECDSA.verify(data2verify, signature, publickey);
+							Log.d("dumb",Boolean.toString(verification));
 							String[] split = pin.split("pin -=");
 							String[] splite = split[1].split("=-");
 							pin = splite[0];
 							Log.d("dumb",pin);
-		                    if (verification)  {		                    	
-		                    	Map<String,String> map = new HashMap<String,String>();
-		                    	map.put("name",ev.getInfo().getName());
-		        			 	map.put("ip",additions);
-		        			 	map.put("port",String.valueOf(ev.getInfo().getPort()));
-		        			 	map.put("pin", pin);
-		                    	dumb(map);		                    	
+		                    if (verification)  {
+		                    	MDNSReceiver rec = new MDNSReceiver(ev.getInfo().getName(),additions,ev.getInfo().getPort(),pin);
+								rec.start();
 		                    }
 		                }
 
@@ -185,14 +175,6 @@ public class MDNSClient {
 		 protected void onPostExecute(JmDNS params) {
 			 	//Do Nothing
 	        }
-		 protected void dumb(Map<String,String> map) {
-			 Intent i = new Intent(context.getApplicationContext(),MDNSReceiver.class);
-			 i.putExtra("name", (String)map.get("name"));
-			 i.putExtra("ip",(String)map.get("ip"));
-			 i.putExtra("port",Integer.parseInt((String) map.get("port")));
-			 i.putExtra("pin",map.get("pin"));
-			 DarknetAppConnector.activity.startActivity(i);
-		 }
 		 
      }
     

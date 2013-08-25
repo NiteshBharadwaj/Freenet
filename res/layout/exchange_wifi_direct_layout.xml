@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	    android:orientation="vertical"
+	    android:layout_width="match_parent"
+	    android:layout_height="match_parent"
+	    android:background="@android:color/background_dark"
+	    android:id = "@id/wifi_direct_exchange_layout"
+	    >
+	
+	    <TextView android:id="@id/wifi_direct_title_new_devices"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/wifi_direct_title"
+	        android:background="#666"
+	        android:textColor="#fff"
+	        android:paddingLeft="5dp"
+	        android:focusable="false"
+	    />
+	    <ListView android:id="@id/wifi_direct_new_devices"
+	        android:layout_width="match_parent"
+	        android:layout_height="0dip"
+	        android:stackFromBottom="true"
+	        android:layout_weight="4"
+	        android:focusable="true"
+	    />
+	
+</LinearLayout>
