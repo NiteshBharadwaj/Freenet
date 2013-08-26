@@ -8,7 +8,6 @@ import android.text.method.ScrollingMovementMethod;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class PeerReferenceActivity extends Activity {
@@ -56,4 +55,19 @@ public class PeerReferenceActivity extends Activity {
 		this.finish();
 	}
 	
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		TextView maintext = (TextView) findViewById(R.id.authorization_text);
+		if (((DarknetAppConnector.activity.getResources().getConfiguration().screenLayout & 
+			    Configuration.SCREENLAYOUT_SIZE_MASK) == 
+			        Configuration.SCREENLAYOUT_SIZE_SMALL) || (DarknetAppConnector.activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+			    // on a small screen device ...
+				maintext.setMaxLines(4);
+		}
+		else {
+			maintext.setMaxLines(10);
+		}
+		maintext.setText(reference);
+	}
 }

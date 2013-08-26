@@ -13,8 +13,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import freenet.darknetconnector.DarknetAppConnector.R;
 import freenet.darknetconnector.NodeReferenceExchange.BluetoothActivity;
+import freenet.darknetconnector.NodeReferenceExchange.QRActivity;
 import freenet.darknetconnector.NodeReferenceExchange.WifiDirectActivity;
 
 import android.os.Bundle;
@@ -63,9 +67,11 @@ public class DarknetAppConnector extends FragmentActivity {
 	protected static final int MESSAGE_FRAGMENT_BLUETOOTH = 5;
 	public static final int MESSAGE_PEERS_UPDATED = 10;
 	public static final int MESSAGE_TIMER_TASK = 11;
+	public static final int MESSAGE_FRAGMENT_QR = 6;
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d("dumb","start off");
 		setContentView(R.layout.main_layout);
 		context = getBaseContext();
 		activity = this;
@@ -82,15 +88,17 @@ public class DarknetAppConnector extends FragmentActivity {
 	
 	protected void onPause() {
 		super.onPause();
+		Log.d("dumb","paused");
 		//mdnsClient.stopListening();
 	}
 	protected void onResume() {
 		super.onResume();
-		//setContentView(R.layout.activity_fproxy_connector);
+		Log.d("dumb","resumed");
 		//mdnsClient.startListening();
 	}
 	protected void onStop() {
 		super.onStop();
+		Log.d("dumb","stopped");
 		//mdnsClient.stopListening();
 	}
 	
@@ -201,7 +209,23 @@ public class DarknetAppConnector extends FragmentActivity {
 	            			    transaction.replace(R.id.fragment_view,fragment,BluetoothActivity.TAG);
 	            			    transaction.addToBackStack("Transaction from optionsfragment to bluetoothfragment");
 	            			    transaction.commit();
+	            			    break;
 	            			}
+	            		}
+	            		break;
+	            	}
+	            	case DarknetAppConnector.MESSAGE_FRAGMENT_QR: {
+	            		int command2 = (int) msg.arg2;
+	            		switch(command2) {
+            				case DarknetAppConnector.MESSAGE_START_FRAGMENT: {
+            					Log.d("dumb","Starting QR fragment");
+	            				FragmentTransaction transaction = fragmentManager.beginTransaction();
+	            				Fragment fragment = new QRActivity(); 
+	            			    transaction.replace(R.id.fragment_view,fragment,QRActivity.TAG);
+	            			    transaction.addToBackStack("Transaction from optionsfragment to qrfragment");
+	            			    transaction.commit();
+            					break;
+            				}
 	            		}
 	            		break;
 	            	}
@@ -240,7 +264,16 @@ public class DarknetAppConnector extends FragmentActivity {
 	@Override
     protected void onActivityResult(int requestCode,
                                      int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
+	    if (scanResult != null) {
+	        // QRScan Result
+	    	String friendRef = scanResult.getContents();
+	    	Message msg = new Message();
+			msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
+			msg.obj = friendRef;
+			Log.d("dumb",friendRef);
+			DarknetAppConnector.handler.sendMessage(msg);
+	    }
         if(resultCode == 100){
         	
         	Boolean result = data.getBooleanExtra("check", false);
@@ -271,6 +304,10 @@ public class DarknetAppConnector extends FragmentActivity {
         		 DarknetAppConnector.handler.sendMessage(msg);
         	}
         }
+	}
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
 	}
 	// Call this from any method to set the default screen with default listeners 
 	// Caution: Call only after the mobile is configured with a home node

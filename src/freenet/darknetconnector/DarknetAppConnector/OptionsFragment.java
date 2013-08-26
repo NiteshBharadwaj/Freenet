@@ -6,6 +6,9 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
+import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.integration.android.IntentResult;
+
 import freenet.darknetconnector.NodeReferenceExchange.BluetoothActivity;
 import freenet.darknetconnector.NodeReferenceExchange.WifiDirectActivity;
 import android.content.Intent;
@@ -36,6 +39,35 @@ public class OptionsFragment extends Fragment {
 		return view;
 	}
 	
+	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
+	    IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
+	    if (scanResult != null) {
+	        // QRScan Result
+	    	String friendRef = scanResult.getContents();
+	    	Message msg = new Message();
+			msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
+			msg.obj = friendRef;
+			DarknetAppConnector.handler.sendMessage(msg);
+	    }
+	    else
+	    	super.onActivityResult(requestCode, resultCode, intent);
+	}
+	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		if (((DarknetAppConnector.activity.getResources().getConfiguration().screenLayout & 
+			    Configuration.SCREENLAYOUT_SIZE_MASK) == 
+			        Configuration.SCREENLAYOUT_SIZE_SMALL) || (DarknetAppConnector.activity.getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE)) {
+			    // on a small screen device ...
+				LinearLayout optionsLayout = (LinearLayout) view.findViewById(R.id.exchange_options);
+				optionsLayout.setOrientation(LinearLayout.HORIZONTAL);
+		}
+		else {
+			//Bigger Device
+			LinearLayout optionsLayout = (LinearLayout) view.findViewById(R.id.exchange_options);
+			optionsLayout.setOrientation(LinearLayout.VERTICAL);
+		}
+	}
 	private void setListeners() {
 		Button wifi_button = (Button) view.findViewById(R.id.wifi_button);
 		Button QR_button = (Button) view.findViewById(R.id.QR_button);
@@ -65,26 +97,9 @@ public class OptionsFragment extends Fragment {
 			public void onClick(View view) {
 				Log.d("dumb","qr");
 				Message msg = new Message();
-				File file = new File(DarknetAppConnector.nodeRefFileName);
-				try {
-					BufferedReader br = new BufferedReader(new FileReader(file));
-					String line = null;
-					String ref = "";
-					while ((line = br.readLine()) != null) {
-						ref = ref.concat(line+'\n');
-						Log.d("dumb","here-- " +line);
-					}
-					msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
-					msg.obj = ref;
-					DarknetAppConnector.handler.sendMessage(msg);
-					
-				} catch (FileNotFoundException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				msg.arg1 = DarknetAppConnector.MESSAGE_FRAGMENT_QR;
+				msg.arg2 = DarknetAppConnector.MESSAGE_START_FRAGMENT;
+				DarknetAppConnector.handler.sendMessage(msg);
 			}
 		});
 		bluetooth_button.setOnClickListener(new OnClickListener() {
