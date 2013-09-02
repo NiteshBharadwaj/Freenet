@@ -3,10 +3,14 @@
     package="freenet.darknetconnector.DarknetAppConnector"
     android:versionCode="1"
     android:versionName="1.0" >
-
+	<!-- define a permission -->
+<permission
+    android:protectionLevel="signature"
+    android:name="freenet.darknetconnector.PERMISSIOIN_SELF"/>
     <uses-sdk
         android:minSdkVersion="8"
         android:targetSdkVersion="17" />
+    <uses-permission android:name="freenet.darknetconnector.PERMISSIOIN_SELF" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />   
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
@@ -19,6 +23,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
 	<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+	<uses-permission android:name="android.permission.CAMERA"/>
+	
 
     <application
         android:allowBackup="true"
@@ -35,7 +41,33 @@
             </intent-filter>
         </activity>
         <activity android:name="freenet.darknetconnector.DarknetAppConnector.PeerReferenceActivity"
+            	  android:permission="freenet.darknetconnector.PERMISSIOIN_SELF"
             	  android:configChanges="keyboardHidden|orientation|screenSize"> </activity>
+        <activity android:name="freenet.darknetconnector.DarknetAppConnector.QRDisplayActivity"
+            	  android:permission="freenet.darknetconnector.PERMISSIOIN_SELF"
+            	  android:configChanges="keyboardHidden|orientation|screenSize"> </activity>
+        <activity android:name="com.google.zxing.client.android.CaptureActivity"
+		   android:permission="freenet.darknetconnector.PERMISSIOIN_SELF"
+		   android:screenOrientation="landscape"
+		   android:configChanges="orientation|keyboardHidden"
+		   android:exported="false"
+		   android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+		   android:windowSoftInputMode="stateAlwaysHidden">
+		   <intent-filter>
+		      <action android:name="android.intent.action.MAIN"/>
+		      <category android:name="android.intent.category.DEFAULT"/>
+		   </intent-filter>
+		   <intent-filter>
+		      <action android:name="freenet.darknetconnector.QRCode.SCAN"/>
+		      <category android:name="android.intent.category.DEFAULT"/>
+		    </intent-filter>
+		</activity>
+		<receiver android:name="freenet.darknetconnector.DarknetAppConnector.ConnectionStateReceiver" >
+    		<intent-filter> 
+     			<action android:name="android.net.wifi.WIFI_STATE_CHANGED"/>
+				<action android:name="android.net.wifi.STATE_CHANGE"/>
+			</intent-filter>
+		</receiver>
     </application>
 
 </manifest>

@@ -13,6 +13,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.Properties;
+import java.util.Random;
 
 import android.bluetooth.BluetoothSocket;
 import android.os.Message;
@@ -29,9 +30,14 @@ public class ConnectionThread extends Thread {
 	private BluetoothSocket bsocket;
 	private boolean isBluetooth;
 	public ConnectionThread(Socket socket) {
+		Log.d("ConnectionThread","starting connection thread");
 		this.socket = socket;
 		try {
-			socket.setSoTimeout(1000);
+			if (socket!=null) {
+				socket.setSoTimeout(1000);
+				Log.d("ConnectionThread","set socket timeout to 1000");
+			}
+			else throw new SocketException();
 		} catch (SocketException e1) {
 			Log.e("ConnectionThread","Couldnot set timeout for socket");
 		}
@@ -39,7 +45,9 @@ public class ConnectionThread extends Thread {
 		try {
 			is = new BufferedInputStream(socket.getInputStream(), 4096);
 			input = new LineReadingInputStream(is);
+			Log.d("ConnectionThread","got input stream ");
 			output = socket.getOutputStream();
+			Log.d("ConnectionThread","got output stream ");
 		} catch (IOException e) {
 			Log.e("ConnectionThread","Couldn't acquire input and output streams",e);
 		}
@@ -80,13 +88,48 @@ public class ConnectionThread extends Thread {
 		try {
 			output.write((REQUEST_REFERENCE_EXCHANGE+'\n').getBytes("UTF-8"));
 			if (input==null) throw new IOException();
+			Random randomGenerator = new Random();
 			String command = input.readLine(32768, 128, true);
 			Log.d("dumb","command -" + command);
 			String line = null;
 			String friendReference = "";
 			String fromSocket = null;
 			boolean doneReading = false;
+			int rand = 0;
+			int back = 0;
 			if (command!=null && command.equals(REQUEST_REFERENCE_EXCHANGE)) {
+				while (rand == back) {
+					rand = randomGenerator.nextInt(1000);
+					output.write(((""+rand)+'\n').getBytes("UTF-8"));
+					back = Integer.parseInt(input.readLine(32768, 128, true));
+				}
+				if (rand > back) {
+					while ((line = br.readLine()) != null) {
+						output.write((line+'\n').getBytes("UTF-8"));
+					}
+					while((fromSocket = input.readLine(32768, 128, true)) != null) {
+						friendReference = friendReference.concat(fromSocket+'\n');
+					    Log.d("dumb","friendRef +---" +fromSocket);
+						if (fromSocket.endsWith("End"))  {
+							doneReading = true;
+							break;
+						}
+					}
+				}
+				else {
+					while((fromSocket = input.readLine(32768, 128, true)) != null) {
+						friendReference = friendReference.concat(fromSocket+'\n');
+						if (fromSocket.endsWith("End"))  {
+							doneReading = true;
+							break;
+						}
+					}
+					while ((line = br.readLine()) != null) {
+						output.write((line+'\n').getBytes("UTF-8"));
+					}
+				}
+			/*Not working on old mobiles
+			   if (command!=null && command.equals(REQUEST_REFERENCE_EXCHANGE)) {
 				while ((line = br.readLine()) != null) {
 				    output.write((line+'\n').getBytes("UTF-8"));
 				    Log.d("dumb","line +---" +line);
@@ -106,7 +149,7 @@ public class ConnectionThread extends Thread {
 							break;
 						}
 					}
-				}
+				}*/
 				Message msg = new Message();
 				msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
 				msg.obj = friendReference;

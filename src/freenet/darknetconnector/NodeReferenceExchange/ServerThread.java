@@ -51,10 +51,13 @@ public class ServerThread extends Thread {
 			try {
 				Log.d("ServerThread","Waiting for TCP connection on " + port);
 				socket = serverSocket.accept();
+				Log.d("ServerThread","socket acquired");
 			} catch (IOException e) {
 				Log.e("ServerThread","problem accepting connection",e);
 			}
-			manageConnectedSocket(socket);
+			if (socket!=null)
+				manageConnectedSocket(socket);
+			else Log.d("ServerThread","socket destroyed");
 		}
 		else {
 			BluetoothSocket bsocket = null;
@@ -85,9 +88,11 @@ public class ServerThread extends Thread {
 		}
 	}
 	private void manageConnectedSocket(Socket socket) {
+		Log.d("ServerThread","trying to start connection thread");
 		if (connectionThread!=null) connectionThread.cancel();
 		connectionThread = new ConnectionThread(socket);
 		connectionThread.start();
+		Log.d("ServerThread","Finished work on server thread");
 	}
 	public void cancel() {
 		if (serverSocket != null)

@@ -45,7 +45,8 @@ public class ClientThread extends Thread {
 				Log.e("ClientThread","Could not connect to server",e);
 			}
 			Log.d("ClientThread","Socket acquired");
-			manageConnectedSocket(socket);
+			if (socket!=null)
+				manageConnectedSocket(socket);
 		}
 		else {
 			 // Cancel discovery because it will slow down the connection

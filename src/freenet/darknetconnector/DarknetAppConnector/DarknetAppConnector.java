@@ -13,9 +13,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Properties;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-
 import freenet.darknetconnector.DarknetAppConnector.R;
 import freenet.darknetconnector.NodeReferenceExchange.BluetoothActivity;
 import freenet.darknetconnector.NodeReferenceExchange.QRActivity;
@@ -264,17 +261,43 @@ public class DarknetAppConnector extends FragmentActivity {
 	@Override
     protected void onActivityResult(int requestCode,
                                      int resultCode, Intent data) {
-        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
-	    if (scanResult != null) {
-	        // QRScan Result
-	    	String friendRef = scanResult.getContents();
-	    	Message msg = new Message();
-			msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
-			msg.obj = friendRef;
-			Log.d("dumb",friendRef);
-			DarknetAppConnector.handler.sendMessage(msg);
+		Fragment fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
+	    if(fragment != null){
+	    	fragment.onActivityResult(requestCode, resultCode, data);
 	    }
-        if(resultCode == 100){
+	    else if ((fragment = (Fragment) fragmentManager.findFragmentByTag(WifiDirectActivity.TAG))!=null) {
+	    	fragment.onActivityResult(requestCode, resultCode, data);
+	    }
+	    else if (requestCode == 210) {
+			// Result of QR scanner activity
+		      if (resultCode == FragmentActivity.RESULT_OK) {
+		         String friendRef = data.getStringExtra("SCAN_RESULT");
+		         String format = data.getStringExtra("SCAN_RESULT_FORMAT");
+		         if (!format.equals("QR_CODE"))  {
+		        	 // TODO: Show error message
+		        	 return;
+		         }
+		         Message msg = new Message();
+		         msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
+		         msg.obj = friendRef;
+		         Log.d("dumb",friendRef);
+		         DarknetAppConnector.handler.sendMessage(msg);
+		         fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
+		    	  if (fragment!=null) BluetoothActivity.closeActivity();
+		    	  fragment = (Fragment) fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
+		    	  if (fragment!=null) WifiDirectActivity.closeActivity();
+		         // Handle successful scan
+		      } 
+		      else if (resultCode == FragmentActivity.RESULT_CANCELED) {
+		    	  fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
+		    	  if (fragment!=null) BluetoothActivity.closeActivity();
+		    	  fragment = (Fragment) fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
+		    	  if (fragment!=null) WifiDirectActivity.closeActivity();
+		         // Handle cancel
+		      }
+		}
+		/**/
+		else if(resultCode == 100){
         	
         	Boolean result = data.getBooleanExtra("check", false);
         	if (result) {

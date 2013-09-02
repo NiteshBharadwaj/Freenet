@@ -4,6 +4,15 @@
 	<item name="verify_button_false" type="id"/>
 	<item name="main_screen_text" type="id"/>
 	<item name="fragment_view" type="id"/>
+	<item name="img_alt" type="id"/>
+	<item name="bt_discovery_menu" type="id"/>
+	<item name="qr_view_img" type="id"/>
+	<item name="bt_qr_img" type="id"/>
+	<item name="bt_qr_scan_button" type="id"/>
+	<item name="bt_discover_button" type="id"/>
+	<item name="wifi_direct_qr_img" type="id"/>
+	<item name="wifi_direct_qr_scan_button" type="id"/>
+	<item name="wifi_direct_discover_button" type="id"/>
 	<item name="exchange_noderef_button" type="id"/>
 	<item name="node_configured_layout" type="id"/>
 	<item name="authorization_layout" type="id"/>

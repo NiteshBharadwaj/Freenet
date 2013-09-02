@@ -13,10 +13,49 @@
 	        android:textColor="#fff"
 	        android:paddingLeft="5dp"
 	    />
-	    <ListView android:id="@id/bluetooth_new_devices"
+		<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:orientation="horizontal"
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_marginTop="20dp"
+		    >
+		    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			    android:orientation="vertical"
+			    android:layout_width="wrap_content"
+			    android:layout_height="match_parent"
+			    android:layout_weight = "0.2"
+			    >
+			    <Button
+			        android:id="@id/bt_qr_scan_button"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:text="@string/scan_bt" 
+			        android:layout_gravity="center_horizontal"/>
+			    <Button
+			        android:id="@id/bt_discover_button"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:text="@string/discover_bt" 
+			        android:layout_gravity="center_horizontal"/>
+			</LinearLayout>
+			<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+			    android:orientation="vertical"
+			    android:layout_width="wrap_content"
+			    android:layout_height="match_parent"
+			    android:layout_weight = "0.8"
+			    >
+				<ImageView
+				    android:id="@id/bt_qr_img"
+				    android:layout_width="wrap_content"
+				    android:layout_height="match_parent"
+				    android:layout_gravity="center_horizontal"/>
+			</LinearLayout>
+		</LinearLayout>
+	    <ListView
+	        android:id="@id/bluetooth_new_devices"
 	        android:layout_width="match_parent"
 	        android:layout_height="0dip"
-	        android:stackFromBottom="true"
-	        android:layout_weight="2"
-	    />
+	        android:layout_weight="0.51"
+	        android:stackFromBottom="true" />
+
 </LinearLayout>

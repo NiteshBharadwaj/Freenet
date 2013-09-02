@@ -6,13 +6,20 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
-import com.google.zxing.integration.android.IntentIntegrator;
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.WriterException;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
 import freenet.darknetconnector.DarknetAppConnector.DarknetAppConnector;
+import freenet.darknetconnector.DarknetAppConnector.QRDisplayActivity;
 import freenet.darknetconnector.DarknetAppConnector.R;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -36,12 +43,6 @@ public class QRActivity extends Fragment {
 		setListeners();
 		return view;
 	}
-	@Override
-	public void onActivityResult(int requestCode,
-                                     int resultCode, Intent data) {
-		super.onActivityResult(requestCode, resultCode, data);
-	}
-	
 	private void setListeners() {
 		TextView text = (TextView) view.findViewById(R.id.authorization_text);
 		text.setText("An external barcode reader app might be needed");
@@ -49,27 +50,13 @@ public class QRActivity extends Fragment {
 		Button  decode = (Button) view.findViewById(R.id.verify_button_false);
 		encode.setText("Make QR");
 		decode.setText("Scan");
-		final IntentIntegrator qr = new IntentIntegrator(DarknetAppConnector.activity);
+		//final IntentIntegrator qr = new IntentIntegrator(DarknetAppConnector.activity);
 		encode.setOnClickListener(new OnClickListener() {
 
 			@Override
 			public void onClick(View v) {
-				String ref = "";
-				File file = new File(DarknetAppConnector.nodeRefFileName);
-				try {
-					BufferedReader br = new BufferedReader(new FileReader(file));
-					String line = null;
-					while ((line = br.readLine()) != null) {
-						ref = ref.concat(line+'\n');
-						Log.d("dumb","here-- " +line);
-					}
-					
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-				qr.shareText(ref);
+				Intent intent = new Intent(getActivity(),QRDisplayActivity.class);
+				startActivity(intent);
 			}
 			
 		});
@@ -77,7 +64,10 @@ public class QRActivity extends Fragment {
 
 			@Override
 			public void onClick(View v) {
-				qr.initiateScan();
+				Intent intent = new Intent("freenet.darknetconnector.QRCode.SCAN");
+				intent.putExtra("freenet.darknetconnector.QRCode.SCAN.SCAN_MODE", "QR_CODE_MODE");
+				getActivity().startActivityForResult(intent, 210);
+				//qr.initiateScan();
 			}
 			
 		});

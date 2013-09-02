@@ -13,11 +13,16 @@
     <string name="menu_settings">Settings</string>
 	<string name="exchange_options">Exchange darknet node references via: </string>
 	<string name="authorization_text">Do you want to continue? </string>
+	<string name="scan_bt"> Scan </string>
+	<string name="discover_bt"> Discover. </string>
+	<string name="scan_wifi_direct"> Scan </string>
+	<string name="discover_wifi_direct"> Discover. </string>
 	<string name="wifi"> WIFI </string>
 	<string name="QR"> QRCode </string>
 	<string name="bluetooth"> Bluetooth </string>
 	<string name="prompt"> The app automatically synchronizes the node references when on home network </string>
-	
+	<string name="enable_discovery_button"> Make Discoverable </string>
 	<string name="wifi_direct_title"> Put title here </string>
 	<string name="bluetooth_title"> Put title here </string>
+	<string name="img_loading_string"> Please wait, loading </string>
 </resources>

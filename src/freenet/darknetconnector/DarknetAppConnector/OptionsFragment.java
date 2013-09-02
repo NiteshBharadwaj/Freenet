@@ -6,9 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 
-import com.google.zxing.integration.android.IntentIntegrator;
-import com.google.zxing.integration.android.IntentResult;
-
 import freenet.darknetconnector.NodeReferenceExchange.BluetoothActivity;
 import freenet.darknetconnector.NodeReferenceExchange.WifiDirectActivity;
 import android.content.Intent;
@@ -40,16 +37,6 @@ public class OptionsFragment extends Fragment {
 	}
 	
 	public void onActivityResult(int requestCode, int resultCode, Intent intent) {
-	    IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, intent);
-	    if (scanResult != null) {
-	        // QRScan Result
-	    	String friendRef = scanResult.getContents();
-	    	Message msg = new Message();
-			msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
-			msg.obj = friendRef;
-			DarknetAppConnector.handler.sendMessage(msg);
-	    }
-	    else
 	    	super.onActivityResult(requestCode, resultCode, intent);
 	}
 	@Override
