@@ -15,6 +15,7 @@ import java.util.Properties;
 
 import freenet.darknetconnector.DarknetAppConnector.R;
 import freenet.darknetconnector.NodeReferenceExchange.BluetoothActivity;
+import freenet.darknetconnector.NodeReferenceExchange.NfcHandler;
 import freenet.darknetconnector.NodeReferenceExchange.QRActivity;
 import freenet.darknetconnector.NodeReferenceExchange.WifiDirectActivity;
 
@@ -54,7 +55,6 @@ public class DarknetAppConnector extends FragmentActivity {
 	public static int newDarknetPeersCountPrev = 0;
 	public static long lastSynched = 0;
 	public static Handler handler;
-	
 	public final static int MESSAGE_FRAGMENT_WIFI_DIRECT = 4;
 	public final static int MESSAGE_START_FRAGMENT = 2;
 	public final static int MESSAGE_FINISH_FRAGMENT = 3;
@@ -65,6 +65,9 @@ public class DarknetAppConnector extends FragmentActivity {
 	public static final int MESSAGE_PEERS_UPDATED = 10;
 	public static final int MESSAGE_TIMER_TASK = 11;
 	public static final int MESSAGE_FRAGMENT_QR = 6;
+	private NfcHandler nfcHandler;
+	private int currentApiVersion = android.os.Build.VERSION.SDK_INT;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -80,16 +83,22 @@ public class DarknetAppConnector extends FragmentActivity {
 		if (configured) {
 			setListeners();
 		}
-
+	}
+	
+	protected void onStart() {
+		super.onStart();
+		if(currentApiVersion>14) nfcHandler = new NfcHandler(this);
 	}
 	
 	protected void onPause() {
 		super.onPause();
 		Log.d("dumb","paused");
+		if (nfcHandler!=null) nfcHandler.onPause();
 		//mdnsClient.stopListening();
 	}
 	protected void onResume() {
 		super.onResume();
+		if (nfcHandler!=null) nfcHandler.onResume();
 		Log.d("dumb","resumed");
 		//mdnsClient.startListening();
 	}
@@ -259,6 +268,10 @@ public class DarknetAppConnector extends FragmentActivity {
 		}
 	
 	@Override
+	public void onNewIntent(Intent intent) {
+		if (nfcHandler!=null) nfcHandler.onNewIntent(intent);
+	}
+	@Override
     protected void onActivityResult(int requestCode,
                                      int resultCode, Intent data) {
 		Fragment fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
@@ -282,10 +295,6 @@ public class DarknetAppConnector extends FragmentActivity {
 		         msg.obj = friendRef;
 		         Log.d("dumb",friendRef);
 		         DarknetAppConnector.handler.sendMessage(msg);
-		         fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
-		    	  if (fragment!=null) BluetoothActivity.closeActivity();
-		    	  fragment = (Fragment) fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
-		    	  if (fragment!=null) WifiDirectActivity.closeActivity();
 		         // Handle successful scan
 		      } 
 		      else if (resultCode == FragmentActivity.RESULT_CANCELED) {
@@ -326,6 +335,10 @@ public class DarknetAppConnector extends FragmentActivity {
         		 msg.arg1 = DarknetAppConnector.MESSAGE_TIMER_TASK;
         		 DarknetAppConnector.handler.sendMessage(msg);
         	}
+        	fragment = (Fragment) fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
+	    	if (fragment!=null) BluetoothActivity.closeActivity();
+	    	fragment = (Fragment) fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
+	    	if (fragment!=null) WifiDirectActivity.closeActivity();
         }
 	}
 	@Override

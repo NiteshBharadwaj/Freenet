@@ -1,7 +1,9 @@
 package freenet.darknetconnector.NodeReferenceExchange;
 
+import java.io.UnsupportedEncodingException;
 import java.util.UUID;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -12,6 +14,10 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcEvent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -44,6 +50,7 @@ public class BluetoothActivity extends Fragment {
 	static final UUID APP_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 	private static final int REQUEST_ENABLE_BT = 101;
 	public static final int BT_QR_REQUEST_CODE = 202;
+	public static final int BT_DATA_RECEIVED_REQUEST_CODE = 203;
 	public static String TAG = "BluetoothActivity";
 	private Activity uiActivity;
 	private static boolean isBluetoothPreviouslyDisabled;
@@ -151,7 +158,7 @@ public class BluetoothActivity extends Fragment {
         else if (requestCode == BluetoothActivity.BT_QR_REQUEST_CODE) {
 			if (resultCode == FragmentActivity.RESULT_OK) {
 				Message msg = new Message();
-				msg.arg1 = BluetoothActivity.BT_QR_REQUEST_CODE;
+				msg.arg1 = BluetoothActivity.BT_DATA_RECEIVED_REQUEST_CODE;
 				msg.obj = data.getStringExtra("SCAN_RESULT");
 				BluetoothActivity.handler.sendMessage(msg);
 			}
@@ -285,7 +292,7 @@ public class BluetoothActivity extends Fragment {
 	public class ResultHandler extends Handler {
 		@Override
         public void handleMessage(Message msg) {
-			if (msg.arg1 == BluetoothActivity.BT_QR_REQUEST_CODE) {
+			if (msg.arg1 == BluetoothActivity.BT_DATA_RECEIVED_REQUEST_CODE) {
 				String MAC_ID = (String) msg.obj;
 				bluetoothAdapter.cancelDiscovery();
 				BluetoothDevice device = null;
@@ -411,6 +418,25 @@ public class BluetoothActivity extends Fragment {
 			connectionThread = new ConnectionThread(socket);
 			connectionThread.start();
 		}
+	}
+
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+	public NdefMessage createNdefMessage(NfcEvent event) {
+		NdefMessage msg = null;
+		String mac = BluetoothAdapter.getDefaultAdapter().getAddress();
+		NdefRecord ndefRec = null;
+		try {
+			ndefRec = new NdefRecord(NdefRecord.TNF_WELL_KNOWN,NdefRecord.RTD_TEXT,"Freenet".getBytes(),mac.getBytes("UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		msg = new NdefMessage(new NdefRecord[]{ ndefRec });
+	    return msg;
+	}
+	
+	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
+	public void onNdefPushComplete(NfcEvent event) {
 	}
 
 }

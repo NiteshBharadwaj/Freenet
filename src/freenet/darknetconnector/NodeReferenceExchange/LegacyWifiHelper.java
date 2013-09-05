@@ -17,6 +17,8 @@ public class LegacyWifiHelper extends Thread {
 	private String IPString = "192.168.49.1";
 	private String MAC_ID;
 	private WifiManager wifiManager;
+	private String prevSSID;
+	private boolean initialization =false;
 	public LegacyWifiHelper(Context context, String SSID, String passkey, String IP, String MAC)  {
 		this.SSID = SSID;
 		this.context = context;
@@ -28,15 +30,49 @@ public class LegacyWifiHelper extends Thread {
 		}
 		this.MAC_ID = MAC;
 	}
+	public void add(String SSID, String passkey, String IP, String MAC) {
+		this.SSID = SSID;
+		this.passkey = passkey;
+		String[] split = IP.split(""+'/');
+		for (String spl :split) {
+			if (spl.startsWith("192.")) 
+				this.IPString = spl;
+		}
+		this.MAC_ID = MAC;
+	}
+	public LegacyWifiHelper(Context context) {
+		initialization = true;
+		this.context = context;
+	}
 	public void run() {
+		if (initialization) {
+			saveNetwork();
+			synchronized(this) {
+				try {
+					this.wait();
+					initialization = false;
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+		if (!initialization)
 		try {
 			changeNetwork();
 		} catch (UnknownHostException e) {
 			e.printStackTrace();
 		}
 	}
+	private void saveNetwork() {
+		wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE); 
+        WifiInfo currentWifi = wifiManager.getConnectionInfo();
+        if (currentWifi!=null) prevSSID = currentWifi.getSSID();
+        wifiManager.disconnect();
+	}
 	private void changeNetwork() throws UnknownHostException {
 		Log.d("dumb","starting stuff");
+        Log.d("dumb",prevSSID);
 		InetAddress IP = null;
 		IP = InetAddress.getByName(IPString);
 		if (IP==null) return;
@@ -44,16 +80,24 @@ public class LegacyWifiHelper extends Thread {
 		conf.SSID = "\"" + SSID + "\"";
 		Log.d("ssid","SSID-->>"+"\"" + SSID + "\"");
 		conf.preSharedKey = "\""+ passkey +"\"";
+		 conf.allowedAuthAlgorithms.set(WifiConfiguration.AuthAlgorithm.OPEN);
+		    conf.allowedProtocols.set(WifiConfiguration.Protocol.WPA); // For WPA
+		    conf.allowedProtocols.set(WifiConfiguration.Protocol.RSN); // For WPA2
+		    conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_PSK);
+		    conf.allowedKeyManagement.set(WifiConfiguration.KeyMgmt.WPA_EAP);
+		    conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.TKIP);
+		    conf.allowedPairwiseCiphers.set(WifiConfiguration.PairwiseCipher.CCMP);
+		    conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.TKIP);
+		    conf.allowedGroupCiphers.set(WifiConfiguration.GroupCipher.CCMP);
 		Log.d("passkey","passkey-->>"+"\""+ passkey +"\"");
-		wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE); 
 		wifiManager.addNetwork(conf);
-		
 		List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
 		for( WifiConfiguration i : list ) {
-		    if(i.SSID != null && i.SSID.equals("\"" + SSID+ "\"")) {
+		    if(i.SSID != null && (i.SSID.equals("\"" + SSID+ "\"") || i.SSID.equals(SSID))) {
 		    	 Log.d("dumb","came here");
-		         wifiManager.disconnect();
+		    	 wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE); 
 		         wifiManager.enableNetwork(i.networkId, true);
+		         if (!wifiManager.isWifiEnabled()) wifiManager.setWifiEnabled(true);
 		         wifiManager.reconnect();               
 		         break;
 		    }           
@@ -65,17 +109,17 @@ public class LegacyWifiHelper extends Thread {
 	}
 	
 	public boolean isCorrectAP() {
-		Log.d("dumb","got SSID--->" + getSSID());
-		Log.d("dumb","assumed SSID--->" + SSID);
-		Log.d("dumb","got MACID--->" + getMacId());
-		Log.d("dumb","assumed MACID--->" + MAC_ID);
-
 		boolean result  = false;
+		if (getSSID().equals(SSID)) Log.d("dumb","1");
+		if (getSSID().equals("\"" + SSID+ "\"")) Log.d("dumb","2");
+		if ((getMacId().equals(MAC_ID))) Log.d("dumb","3");
+		if (getMacId().equals("\"" + MAC_ID+ "\"")) Log.d("dumb","4");
+		Log.d("expected mac",MAC_ID);
+		Log.d("dumb-  got mac", getMacId());
 		if (getSSID().equals(SSID) || getSSID().equals("\"" + SSID+ "\"")) result = true;
-		if ( (getMacId().equals(MAC_ID) || getMacId().equals("\"" + MAC_ID+ "\"")) && result ) result = true;
-		if (getMacId().equals(MAC_ID)) Log.d("dumb","1");
-		if (getMacId().equals("\"" + MAC_ID+ "\"")) Log.d("dumb","2");
-		if (getMacId().length() == MAC_ID.length()) Log.d("dumb","3");
+		int d = hammingDistance(getMacId(),MAC_ID);
+		if (d>-1 && d<2 && result ) result = true;
+		else result = false;
 		return result;
 	}
 	public InetAddress getIP() {
@@ -85,6 +129,32 @@ public class LegacyWifiHelper extends Thread {
 			e.printStackTrace();
 			return null;
 		}
+	}
+	public void finish() {
+		List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
+        wifiManager.disconnect();
+		for( WifiConfiguration i : list ) {
+		    if(i.SSID != null) {
+		    	 if (i.SSID.equals("\"" + SSID+ "\"") || i.SSID.equals(SSID)) {
+		    		Log.d("dumb","came here");
+		         	wifiManager.disableNetwork(i.networkId);
+		    	 }
+		    	 if (prevSSID!=null && !prevSSID.equals("")) {
+		    		 if (i.SSID.equals("\"" + prevSSID+ "\"") || i.SSID.equals(prevSSID)) {
+		    			 wifiManager.enableNetwork(i.networkId, true);
+				         wifiManager.reconnect();
+		    		 }
+		    	 }
+		    }           
+		}
+	}
+	private int hammingDistance(String s1,String s2) {
+		if (s1.length()!=s2.length()) return -1;
+		int d = 0;
+		for (int i=0; i!= s1.length();i++) {
+			if (s1.charAt(i)!=s2.charAt(i)) d++;
+		}
+		return d;
 	}
 	private String getMacId() {
 	    WifiInfo wifiInfo = wifiManager.getConnectionInfo();

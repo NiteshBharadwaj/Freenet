@@ -1,5 +1,6 @@
 package freenet.darknetconnector.NodeReferenceExchange;
 
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
@@ -8,7 +9,9 @@ import freenet.darknetconnector.DarknetAppConnector.DarknetAppConnector;
 import freenet.darknetconnector.DarknetAppConnector.QRDisplayActivity;
 import freenet.darknetconnector.DarknetAppConnector.R;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -31,6 +34,10 @@ import android.net.wifi.p2p.WifiP2pManager.Channel;
 import android.net.wifi.p2p.WifiP2pManager.ConnectionInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.GroupInfoListener;
 import android.net.wifi.p2p.WifiP2pManager.PeerListListener;
+import android.nfc.NdefMessage;
+import android.nfc.NdefRecord;
+import android.nfc.NfcEvent;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -49,9 +56,11 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.AdapterView.OnItemClickListener;
 
+@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class WifiDirectActivity extends Fragment {
 	
 	private static final int WIFI_DIRECT_QR_REQUEST_CODE =301;
+	public static final int WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE =303;
 	public static final int MESSAGE_NETWORK_CONNECTED = 302;
 	private static WifiP2pManager manager;
 	public static String TAG = "WifiDirectActivity";
@@ -74,6 +83,7 @@ public class WifiDirectActivity extends Fragment {
 	private boolean groupRunningWithMeAsGroupOwner = false;
 	private WifiP2pDevice friendDevice;
 	public static ConnectionInfoHandler handler;
+	private boolean groupStartingWithMeAsClient = false;
 	private PeerListListener peerListListener = new PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
@@ -360,6 +370,53 @@ public class WifiDirectActivity extends Fragment {
 	        		}
 	        	}
 			}
+			else if (msg.arg1 == WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE) {
+				if (manager!=null && channel!=null) {
+					final String signal = (String)msg.obj;
+					manager.removeGroup(channel, new ActionListener() {
+
+						@Override
+						public void onFailure(int arg0) {
+							if (arg0==2)  {
+								Message msg2 = new Message();
+								msg2.obj = signal;
+								wifiHelper = new LegacyWifiHelper(uiActivity);
+								wifiHelper.start();
+								groupStartingWithMeAsClient = true;
+								msg2.arg1 = WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1;
+								handler.sendMessageDelayed(msg2, 500);
+								
+							}
+							else Log.d(TAG,"Couldn't remove group");
+							
+						}
+
+						@Override
+						public void onSuccess() {
+							Message msg2 = new Message();
+							msg2.obj = signal;
+							wifiHelper = new LegacyWifiHelper(uiActivity);
+							wifiHelper.start();
+							groupStartingWithMeAsClient = true;
+							msg2.arg1 = WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1;
+							handler.sendMessageDelayed(msg2, 500);
+						}
+						
+					});
+				}
+			}
+			else if (msg.arg1 == WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1) {
+				String signal = (String) msg.obj;
+				Log.d(TAG,"scan result -- "+ signal);
+				String[] splitSignal = signal.split("-->>");
+				if (splitSignal.length != 4) return;
+				Log.d("dumber than dumb", splitSignal[3]);
+				if (wifiHelper!=null) wifiHelper.add(splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
+				else wifiHelper = new LegacyWifiHelper(uiActivity,splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
+				if (wifiHelper!=null) synchronized(wifiHelper) {
+					wifiHelper.notify();
+				}
+			}
 		}
 	}
 	private void createServer() {
@@ -425,6 +482,7 @@ public class WifiDirectActivity extends Fragment {
 			manager.cancelConnect(channel, null);
 			manager.removeGroup(channel, null);
 		}
+		if (wifiHelper!=null) wifiHelper.finish();
 		DarknetAppConnector.fragmentManager.popBackStack();
 		Log.d(WifiDirectActivity.TAG,"closed the wifi direct fragment");
 		return successful;
@@ -482,6 +540,8 @@ public class WifiDirectActivity extends Fragment {
 						@Override
 						public void onFailure(int arg0) {
 							if (arg0==2)  {
+								wifiHelper = new LegacyWifiHelper(uiActivity);
+								wifiHelper.start();
 								Intent intent = new Intent("freenet.darknetconnector.QRCode.SCAN");
 								intent.putExtra("freenet.darknetconnector.QRCode.SCAN.SCAN_MODE", "QR_CODE_MODE");
 								uiActivity.startActivityForResult(intent, WifiDirectActivity.WIFI_DIRECT_QR_REQUEST_CODE);
@@ -492,6 +552,8 @@ public class WifiDirectActivity extends Fragment {
 
 						@Override
 						public void onSuccess() {
+							wifiHelper = new LegacyWifiHelper(uiActivity);
+							wifiHelper.start();
 							Intent intent = new Intent("freenet.darknetconnector.QRCode.SCAN");
 							intent.putExtra("freenet.darknetconnector.QRCode.SCAN.SCAN_MODE", "QR_CODE_MODE");
 							uiActivity.startActivityForResult(intent, WifiDirectActivity.WIFI_DIRECT_QR_REQUEST_CODE);
@@ -514,8 +576,11 @@ public class WifiDirectActivity extends Fragment {
 				String[] splitSignal = signal.split("-->>");
 				if (splitSignal.length != 4) return;
 				Log.d("dumber than dumb", splitSignal[3]);
-				wifiHelper = new LegacyWifiHelper(uiActivity,splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
-				if (wifiHelper!=null) wifiHelper.start();
+				if (wifiHelper!=null) wifiHelper.add(splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
+				else wifiHelper = new LegacyWifiHelper(uiActivity,splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
+				if (wifiHelper!=null) synchronized(wifiHelper) {
+					wifiHelper.notify();
+				}
 			}
 			else if (resultCode == FragmentActivity.RESULT_CANCELED) {
 		         // Handle cancel
@@ -531,4 +596,25 @@ public class WifiDirectActivity extends Fragment {
         	} catch (Exception e){
         		}
         	}
+	
+	public NdefMessage createNdefMessage(NfcEvent event) {
+		NdefMessage msg = null;
+		String signal = "-->>";
+		if (!passkey.equals("") && !MAC_ID.equals("") && !mySSID.equals("") && !myIP.equals("")) 
+			signal = passkey +signal +MAC_ID+signal+mySSID + signal + myIP;
+		else return msg;
+		NdefRecord ndefRec = null;
+		try {
+			ndefRec = new NdefRecord(NdefRecord.TNF_WELL_KNOWN,NdefRecord.RTD_TEXT,"Freenet".getBytes(),signal.getBytes("UTF-8"));
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		msg = new NdefMessage(new NdefRecord[]{ ndefRec });
+	    return msg;
+	}
+
+	public void onNdefPushComplete(NfcEvent event) {
+		
+	}
 }

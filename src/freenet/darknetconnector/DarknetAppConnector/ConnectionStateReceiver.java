@@ -20,6 +20,7 @@ public class ConnectionStateReceiver extends BroadcastReceiver {
 		if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
 			NetworkInfo info =  intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 			if (info.isConnected()) {
+				if (DarknetAppConnector.class == null || DarknetAppConnector.fragmentManager == null) return;
 				Fragment fragment = (Fragment) DarknetAppConnector.fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
 				if (fragment!=null) {
 					Log.d(TAG,"network state changed");
