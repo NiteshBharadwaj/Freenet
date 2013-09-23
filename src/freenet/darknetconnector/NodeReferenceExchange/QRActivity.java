@@ -1,26 +1,14 @@
+/**
+ * Transfer node references as QR code
+ * To be used with high definition cameras (> 5MP)
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-
-import com.google.zxing.BarcodeFormat;
-import com.google.zxing.WriterException;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
-
-import freenet.darknetconnector.DarknetAppConnector.DarknetAppConnector;
 import freenet.darknetconnector.DarknetAppConnector.QRDisplayActivity;
 import freenet.darknetconnector.DarknetAppConnector.R;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -30,7 +18,7 @@ import android.widget.TextView;
 
 public class QRActivity extends Fragment {
 	private View view;
-	public static final String TAG = "AuthorizationFragment";
+	public static final String TAG = "QRActivity";
 	@Override
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);        

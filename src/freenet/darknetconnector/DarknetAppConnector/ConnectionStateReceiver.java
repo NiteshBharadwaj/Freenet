@@ -1,3 +1,8 @@
+/**
+ * Broadcast Receiver that listens for changes in the wifi status
+ * If connected, it tells the same to DarknetAppConnector or WifiDirectActivity
+ * TODO: Listen for tethered network signals
+ */
 package freenet.darknetconnector.DarknetAppConnector;
 
 import freenet.darknetconnector.NodeReferenceExchange.WifiDirectActivity;
@@ -18,6 +23,7 @@ public class ConnectionStateReceiver extends BroadcastReceiver {
 	public void onReceive(Context context, Intent intent) {
 		String action = intent.getAction();
 		if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
+			Log.d(TAG,"Wifi Satus Changed");
 			NetworkInfo info =  intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 			if (info.isConnected()) {
 				if (DarknetAppConnector.class == null || DarknetAppConnector.fragmentManager == null) return;

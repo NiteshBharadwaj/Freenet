@@ -1,9 +1,15 @@
+/**
+ * Fragment that manages wifi direct connection
+ * On device versions >= 14 (ICS)
+ * Both devices start a group and show their MAC, SSID etc as a QR code
+ * If it receives the details about other device by scanning QR or as nfc message, it kills its own group and connects to the peer
+ * Also supports discovery of new devices and connections by conventional process 
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.List;
 
 import freenet.darknetconnector.DarknetAppConnector.DarknetAppConnector;
 import freenet.darknetconnector.DarknetAppConnector.QRDisplayActivity;
@@ -11,7 +17,6 @@ import freenet.darknetconnector.DarknetAppConnector.R;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.bluetooth.BluetoothAdapter;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +25,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.net.wifi.WifiConfiguration;
 import android.net.wifi.WifiManager;
 import android.net.wifi.WpsInfo;
 import android.net.wifi.p2p.WifiP2pConfig;
@@ -45,7 +49,6 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
@@ -86,6 +89,9 @@ public class WifiDirectActivity extends Fragment {
 	private WifiP2pDevice friendDevice;
 	public static ConnectionInfoHandler handler;
 	private boolean groupStartingWithMeAsClient = false;
+	/**
+	 * Listener to listen for newly discovered peers 
+	 */
 	private PeerListListener peerListListener = new PeerListListener() {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
@@ -106,7 +112,9 @@ public class WifiDirectActivity extends Fragment {
         }
 
     };
+    
     // The on-click listener for all devices in the ListViews
+    // If there is a wifi direct group, we must remove it to connect as a client
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int position, long id) {
             Log.d(WifiDirectActivity.TAG,"clicked to connect to a peer");
@@ -116,7 +124,6 @@ public class WifiDirectActivity extends Fragment {
                 @Override
                 public void onSuccess() {
                 	Log.d(WifiDirectActivity.TAG,"removing group");
-                    // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
                 	if (!groupRunningWithMeAsGroupOwner) connectToFriend(friendDevice);
                 	
                 }
@@ -124,6 +131,7 @@ public class WifiDirectActivity extends Fragment {
                 @Override
                 public void onFailure(int reason) {
                     Log.d(WifiDirectActivity.TAG,"Couldn't remove group - " + reason);
+                    // Reason 2 - There was no group to be removed in the first place!
                     if (reason==2) {
                     	groupRunningWithMeAsGroupOwner = false;
                     	connectToFriend(friendDevice);
@@ -132,11 +140,16 @@ public class WifiDirectActivity extends Fragment {
             });
         }
     };
+    /**
+     * Connect to a friend P2p Device
+     * We become the client automatically when we call this method
+     * @param device
+     */
     private void connectToFriend(WifiP2pDevice device) {
     	if (device == null) return;
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
-        config.groupOwnerIntent = 0; 
+        config.groupOwnerIntent = 0;  // Zero intention to become a group owner
         config.wps.setup = WpsInfo.PBC;
         manager.connect(channel, config, new ActionListener() {
 
@@ -153,6 +166,10 @@ public class WifiDirectActivity extends Fragment {
             }
         });
     }
+    /**
+     * Reach here automatically when a connection is resolved
+     * Makes group owner the server and the other device the client
+     */
     private ConnectionInfoListener connectionInfoListener = new ConnectionInfoListener() {
     	
 		@Override
@@ -209,6 +226,10 @@ public class WifiDirectActivity extends Fragment {
 		}
     	
     };
+    
+    /**
+     * Show QR of our MAC_ID + SSID + WPA passkey + (ip + port of server)
+     */
 	private void showQR() {
 		int dimension = 250;
 		if ((DarknetAppConnector.activity.getResources().getConfiguration().screenLayout & 
@@ -232,6 +253,10 @@ public class WifiDirectActivity extends Fragment {
 			text.setText("Ready - Bring devices back to back if peer has Nfc Enabled");
 		else text.setText("Scan QR (faster) or use conventional discovery process");
 	}
+	
+	/**
+	 * Array adapter that holds all discovered devices
+	 */
 	private class DevicesArrayAdapter extends ArrayAdapter<String>{
 		private ArrayAdapter<WifiP2pDevice> availablePeers;
 		public DevicesArrayAdapter(Context context, int resourceId) {
@@ -263,7 +288,10 @@ public class WifiDirectActivity extends Fragment {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);        
     }
-	
+	/**
+	 * Entry point
+	 * Get the parent activity as well as add all the listeners
+	 */
 	@Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         uiActivity = DarknetAppConnector.activity;
@@ -279,6 +307,9 @@ public class WifiDirectActivity extends Fragment {
         return view;
 	}
 	
+	/**
+	 * Register receivers and show QR
+	 */
 	@Override
 	public void onStart() {
 		super.onStart();
@@ -292,6 +323,7 @@ public class WifiDirectActivity extends Fragment {
 		showQR();
 		setListeners();
 	}
+	// Called when peer list is updated
 	protected void updatePeers() {
         ListView newDevicesListView = (ListView) uiActivity.findViewById(R.id.wifi_direct_new_devices);
         if (newDevicesListView==null) Log.d(WifiDirectActivity.TAG,"new devices list view is null");
@@ -308,6 +340,8 @@ public class WifiDirectActivity extends Fragment {
 		public void onReceive(Context context, Intent intent) {
 			String action = intent.getAction();
 			
+			// Got the state whether p2p is enabled or disabled
+			// If enabled create a group 
 			if (WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION.equals(action)) {
 		        int state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1);
 		        if (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED) {
@@ -343,9 +377,9 @@ public class WifiDirectActivity extends Fragment {
 	            	
 	            }
 
-	        } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
-	            //DeviceListFragment fragment = (DeviceListFragment) activity.getFragmentManager()
-	              //      .findFragmentById(R.id.frag_list);
+	        } 
+	        // Our device status changed. Redraw the QR with new MAC,SSID etc
+	        else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
 	            WifiP2pDevice device = ((WifiP2pDevice) intent.getParcelableExtra(
 	                    WifiP2pManager.EXTRA_WIFI_P2P_DEVICE));
 	            String deviceName = device.deviceName;
@@ -355,7 +389,10 @@ public class WifiDirectActivity extends Fragment {
 	            Log.d(TAG,deviceName);
 	            Log.d(TAG,MAC_ID);
 	            Log.d(TAG,status);
-	        } else if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
+	          
+	        } 
+	        // Connected to a device through legacy wifi
+	        else if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
 	        	Log.d(TAG,"network state changed");
 	        	NetworkInfo info =  intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
 	        	Log.d(TAG,WifiManager.EXTRA_NETWORK_INFO);
@@ -407,6 +444,10 @@ public class WifiDirectActivity extends Fragment {
 				TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
 				text.setText("Connecting - Please Wait ");
 			}
+			/**
+			 * Received the other mobile's details by either QR or as NDEF message
+			 * Destroy our group and connect
+			 */
 			else if (msg.arg1 == WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE) {
 				TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
 				text.setText("Connecting - Please Wait ");
@@ -443,7 +484,7 @@ public class WifiDirectActivity extends Fragment {
 							groupStartingWithMeAsClient = true;
 							msg2.arg1 = WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1;
 							// crappy code
-							//  Assuming our server would be removed in 500ms
+							//  Assuming our server would be removed  in 500ms
 							handler.sendMessageDelayed(msg2, 500);
 						}
 						
@@ -478,8 +519,7 @@ public class WifiDirectActivity extends Fragment {
 
             @Override
             public void onFailure(int reasonCode) {
-                Log.d("p1","no");
-                Log.d(WifiDirectActivity.TAG,"" +reasonCode);
+                Log.d(WifiDirectActivity.TAG,"Group can't be created - " +reasonCode);
                 
             }
 		}); 
@@ -648,7 +688,7 @@ public class WifiDirectActivity extends Fragment {
         	} catch (Exception e){
         		}
         	}
-	
+	// Nfc Helper asks for a message. Put our MAC, SSID etc
 	public NdefMessage createNdefMessage(NfcEvent event) {
 		NdefMessage msg = null;
 		String signal = "-->>";

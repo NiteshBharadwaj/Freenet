@@ -1,3 +1,9 @@
+/**
+ * Controls the bluetooth based exchange and everything related to bluetooth in the application
+ * Ask user to turn on bt, create a server thread and show our MAC as QR
+ * If we receive a peer MAC by QR or NFC, destroy server thread and connect to peer as client
+ * Allow discovery of bt devices and connect on button click
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.io.UnsupportedEncodingException;
@@ -35,7 +41,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -63,6 +68,7 @@ public class BluetoothActivity extends Fragment {
 	private static boolean isSuccessful = false;
 	public static ResultHandler handler;
 	private boolean activityStarted = false;
+	
 	// The on-click listener for all devices in the ListViews
 	private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int position, long id) {
@@ -93,7 +99,8 @@ public class BluetoothActivity extends Fragment {
 		View view = inflater.inflate(R.layout.echange_bluetooth_layout,null);
 		// Check bluetooth
 		if (bluetoothAdapter == null) {
-		    // TODO: Put message that bluetooth is not supported in this device
+			TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+			text.setText("No bluetooth adapter found");
 			view = inflater.inflate(R.layout.empty_layout, null);
 			closeActivity();
 		}
@@ -111,17 +118,6 @@ public class BluetoothActivity extends Fragment {
 	 public void onStart() {
 		 Log.d(BluetoothActivity.TAG,"start");
 		 super.onStart();
-		 	// Check if bluetooth is discoverable or not
-			/*if(bluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
-			    Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
-			    discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120);
-			    startActivityForResult(discoverableIntent, BluetoothActivity.BLUETOOTH_DISCOVERY_ID);
-			    Log.d("dumb","trying to make discoverable");
-			}
-			else {
-				activityStarted = true;
-				startServer();
-			}*/
 		 TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
 		 text.setText("Initializing");
 		 if (activityStarted && serverThread==null)
@@ -464,7 +460,6 @@ public class BluetoothActivity extends Fragment {
 		try {
 			ndefRec = new NdefRecord(NdefRecord.TNF_WELL_KNOWN,NdefRecord.RTD_TEXT,"Freenet".getBytes(),mac.getBytes("UTF-8"));
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		msg = new NdefMessage(new NdefRecord[]{ ndefRec });

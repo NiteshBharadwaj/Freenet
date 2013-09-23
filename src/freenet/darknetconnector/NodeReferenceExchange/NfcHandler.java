@@ -1,3 +1,7 @@
+/**
+ * To handle nfc based short message exchange
+ * To be only called from OS version >= 14 (ICS)
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.io.UnsupportedEncodingException;
@@ -19,7 +23,6 @@ import android.nfc.NfcEvent;
 import android.os.Build;
 import android.os.Message;
 import android.os.Parcelable;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
@@ -31,6 +34,7 @@ public class NfcHandler implements CreateNdefMessageCallback, OnNdefPushComplete
 	private String[][] techLists;
 	private PendingIntent pendingIntent;
 	private boolean isEnabled;
+	
 	public NfcHandler(Activity activity) {
 		this.activity = activity;
 		nfcAdapter = NfcAdapter.getDefaultAdapter(activity);
@@ -93,12 +97,11 @@ public class NfcHandler implements CreateNdefMessageCallback, OnNdefPushComplete
 	public void processIntent(Intent intent) throws UnsupportedEncodingException {
 	    Parcelable[] rawMsgs = intent.getParcelableArrayExtra(
 	            NfcAdapter.EXTRA_NDEF_MESSAGES);
-	    // only one message sent during the beam
+	    
 	    NdefMessage msg = (NdefMessage) rawMsgs[0];
 	    NdefRecord[] recs = msg.getRecords();
 	    byte[] type = recs[0].getType();
 	    byte[] value = recs[0].getPayload();
-	    // record 0 contains the MIME type, record 1 is the AAR, if present
 	    String str = new String(value,"UTF-8");
 	    Log.d(NfcHandler.TAG,str+ "-->>received");
 	    Log.d(NfcHandler.TAG,intent+ "-->>received");
@@ -116,15 +119,17 @@ public class NfcHandler implements CreateNdefMessageCallback, OnNdefPushComplete
 			msg2.obj = new String(value,"UTF-8");;
 			WifiDirectActivity.handler.sendMessage(msg2);
 		}
-	    //beamMsg.setText(str);
 	}
-
+	
+	/**
+	 * If the main activity receives an nfc message, it is handed to us here
+	 * @param intent
+	 */
 	public void onNewIntent(Intent intent) {
 		// onResume gets called after this to handle the intent
 	    try {
 			processIntent(intent);
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

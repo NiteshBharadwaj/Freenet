@@ -24,7 +24,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Formatter;
 import java.util.HashSet;
@@ -178,13 +177,10 @@ public class PinningTrustManager implements X509TrustManager {
       return;
     }
 
-    // Note: We do this so that we'll never be doing worse than the default
-    // system validation.  It's duplicate work, however, and can be factored
-    // out if we make the verification below more complete.
+    // Not checking system trust as the certificate is not yet trusted by the OS
     //checkSystemTrust(chain, authType);
-    Log.d("dumb","pin Start");
     checkPinTrust(chain);
-    Log.d("dumb","OMG");
+    Log.d("PinningTrustManager","Pin Match");
     cache.add(chain[0]);
     
   }

@@ -1,3 +1,8 @@
+/**
+ * A generic server thread for both Bluetooth and Wifi sockets
+ * Waits for a client to connect
+ * Once connected, a connection thread is started
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.io.IOException;

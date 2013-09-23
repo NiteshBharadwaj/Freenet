@@ -1,3 +1,7 @@
+/**
+ * Required by Wifi Direct Connection
+ * Save present network, Request OS to connect to the other mobile, switch back to present network
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.net.InetAddress;

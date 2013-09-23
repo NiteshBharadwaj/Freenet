@@ -67,7 +67,8 @@ public class OptionsFragment extends Fragment {
 				LinearLayout optionsLayout = (LinearLayout) view.findViewById(R.id.exchange_options);
 				optionsLayout.setOrientation(LinearLayout.HORIZONTAL);
 		}
-		
+		if (DarknetAppConnector.currentApiVersion<14) wifi_button.setVisibility(View.GONE);
+		else
 		wifi_button.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View view) {

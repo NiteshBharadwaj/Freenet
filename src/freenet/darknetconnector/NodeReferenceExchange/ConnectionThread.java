@@ -1,18 +1,19 @@
+/**
+ * Connection thread which has the acquired sockets
+ * It exchanges the nodereferences and notifies the main application about the same after a succesful exchange
+ */
 package freenet.darknetconnector.NodeReferenceExchange;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
-import java.util.Properties;
 import java.util.Random;
 
 import android.bluetooth.BluetoothSocket;
@@ -76,14 +77,12 @@ public class ConnectionThread extends Thread {
 			try {
 				peerRefFile.createNewFile();
 			} catch (IOException e3) {
-				// TODO Auto-generated catch block
 				e3.printStackTrace();
 			} 
 		BufferedReader br = null;
 		try {
 			br = new BufferedReader(new FileReader(myRefFile));
 		} catch (FileNotFoundException e2) {
-			// TODO Auto-generated catch block
 			e2.printStackTrace();
 		}
 		try {
@@ -98,12 +97,16 @@ public class ConnectionThread extends Thread {
 			boolean doneReading = false;
 			int rand = 0;
 			int back = 0;
+			
 			if (command!=null && command.equals(REQUEST_REFERENCE_EXCHANGE)) {
+				// Deciding which of the two mobiles should transfer first
+				// Both of them sending and receiving at the same time is resulting in crashes in case of bluetooth in old mobiles
 				while (rand == back) {
 					rand = randomGenerator.nextInt(1000);
 					output.write(((""+rand)+'\n').getBytes("UTF-8"));
 					back = Integer.parseInt(input.readLine(32768, 128, true));
 				}
+				// Our mobile sends the complete reference first and then receives peer reference
 				if (rand > back) {
 					while ((line = br.readLine()) != null) {
 						output.write((line+'\n').getBytes("UTF-8"));
@@ -117,6 +120,7 @@ public class ConnectionThread extends Thread {
 						}
 					}
 				}
+				// Our mobile receives the peer reference first and then sends our reference
 				else {
 					while((fromSocket = input.readLine(32768, 128, true)) != null) {
 						friendReference = friendReference.concat(fromSocket+'\n');
@@ -129,7 +133,7 @@ public class ConnectionThread extends Thread {
 						output.write((line+'\n').getBytes("UTF-8"));
 					}
 				}
-			/*Not working on old mobiles
+			/*Not working on old mobiles in case of bluetooth
 			   if (command!=null && command.equals(REQUEST_REFERENCE_EXCHANGE)) {
 				while ((line = br.readLine()) != null) {
 				    output.write((line+'\n').getBytes("UTF-8"));
@@ -151,6 +155,9 @@ public class ConnectionThread extends Thread {
 						}
 					}
 				}*/
+				
+				// Tell the base class about the successful exchange
+				// Also, send the exchange in the message
 				Message msg = new Message();
 				msg.arg1 = DarknetAppConnector.MESSAGE_PEERS_UPDATED;
 				msg.obj = friendReference;
@@ -170,28 +177,24 @@ public class ConnectionThread extends Thread {
 			try {
 				input.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		if (output!=null)
 			try {
 				output.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		if (socket!=null)
 			try {
 				socket.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		if (bsocket!=null)
 			try {
 				bsocket.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		bsocket = null;

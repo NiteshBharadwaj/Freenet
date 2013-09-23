@@ -66,7 +66,7 @@ public class DarknetAppConnector extends FragmentActivity {
 	public static final int MESSAGE_NETWORK_CONNECTED = 20;
 	private static final String TAG = "DarknetAppConnector";
 	private NfcHandler nfcHandler;
-	private int currentApiVersion = android.os.Build.VERSION.SDK_INT;
+	public static int currentApiVersion = android.os.Build.VERSION.SDK_INT;
 	public static boolean isNfcEnabled = false;
 	
 	/**
