@@ -60,6 +60,10 @@ public class MDNSReceiver extends Thread {
 				raiseIntent(change);
 			}
     	}
+    	/**
+    	 * Raise intent asking user if he wishes a change in homenode
+    	 * @param change false - first configuration ; true - when a new node is detected
+    	 */
 		public void raiseIntent(boolean change) {
 			HomeNode.setTemp(name,port,ip,pin);
 			Activity uiActivity = DarknetAppConnector.activity;
@@ -75,6 +79,11 @@ public class MDNSReceiver extends Thread {
 			transaction.commit();
 		}
 		
+		/**
+		 * Result of the intent raised
+		 * If user has accepted, connect with homenode and pull homereference
+		 * @param result  accept/reject status
+		 */
 		public static void handleResult(boolean result) {
 	       	 if (result) {
 	       		 		HomeNode.finalizeHome();
