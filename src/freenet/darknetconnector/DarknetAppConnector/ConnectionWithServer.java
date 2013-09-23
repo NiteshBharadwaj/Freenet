@@ -52,7 +52,7 @@ public class ConnectionWithServer implements Runnable {
 			Message msg = new Message();
 			char uiCommand = DarknetAppConnector.MESSAGE_CONFIGURED_FIRST_TIME;
 			msg.arg1 = uiCommand;
-			msg.obj = name;
+			msg.obj = name+"-->>"+pin;
 			DarknetAppConnector.handler.sendMessage(msg);
  		}
 		DarknetAppConnector.lastSynched = System.currentTimeMillis();

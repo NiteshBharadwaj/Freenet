@@ -39,6 +39,7 @@ import android.os.Message;
 import android.util.Log;
 
 public class DarknetAppClient {
+	private static final String TAG = "DarknetAppClient";
 	private static String REQUEST_CERTIFICATE = "Certificate";
     private static String REQUEST_HOME_REFERENCE = "HomeReference";
     private static String REQUEST_PUSH_REFERENCE = "PushReference";
@@ -127,7 +128,7 @@ public class DarknetAppClient {
 			String nodereference = prop.getProperty("newPeers" + i);
 			out.write((nodereference+'\n').getBytes("UTF-8"));
 		}
-		Log.d("dumb","written");
+		Log.d(DarknetAppClient.TAG,"Pushed all the peer noderefs to homeNode");
 		if (input.readLine(32768, 128, true).equals(ASSERT_NODE_REFERENCES_RECEIVED))  {
 			DarknetAppConnector.newDarknetPeersCount = 0;
 			DarknetAppConnector.updatedPeersCount();

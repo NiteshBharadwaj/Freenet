@@ -13,6 +13,7 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 public class ServerThread extends Thread {
+	private static final String TAG = "ServerThread";
 	private ServerSocket serverSocket;
 	private BluetoothServerSocket bluetoothServerSocket;
 	private Socket socket;
@@ -64,14 +65,14 @@ public class ServerThread extends Thread {
 	        
 	        while (true) {
 	            try {
-	            	Log.d("dumb","waaitng");
+	            	Log.d(ServerThread.TAG,"waaitng");
 	            	if (bluetoothServerSocket!=null)
 	                bsocket = bluetoothServerSocket.accept();
 	            } catch (IOException e) {
-	            	Log.e("dumb","Connection closed on server thread"+ " -- -"+e.getMessage(),e);
+	            	Log.e(ServerThread.TAG,"Connection closed on server thread"+ " -- -"+e.getMessage(),e);
 	                break;
 	            }
-	            Log.d("dumb","Connection Accepted");
+	            Log.d(ServerThread.TAG,"Connection Accepted");
 	            // If a connection was accepted
 	            if (bsocket != null) {
 	                // manage 
@@ -104,7 +105,7 @@ public class ServerThread extends Thread {
 		if (bluetoothServerSocket!=null)
 			try {
 	            bluetoothServerSocket.close();
-	            Log.d("dumb","Server Closed");
+	            Log.d(ServerThread.TAG,"Server Closed");
 	        } catch (IOException e) { }
 	}
 }

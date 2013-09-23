@@ -7,6 +7,15 @@
      android:layout_height="match_parent"
      android:background="@android:color/background_dark"
      android:orientation="vertical" >
+     <TextView android:id="@id/options_title_unsynced_peers"
+	        android:layout_width="match_parent"
+	        android:layout_height="wrap_content"
+	        android:text="@string/options_title"
+	        android:background="#666"
+	        android:textColor="#fff"
+	        android:paddingLeft="5dp"
+	        android:focusable="false"
+	    />
 	<TextView
           android:id="@id/exchange_options_text"
           android:layout_width="wrap_content"

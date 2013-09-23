@@ -8,6 +8,7 @@
 	<item name="bt_discovery_menu" type="id"/>
 	<item name="qr_view_img" type="id"/>
 	<item name="bt_qr_img" type="id"/>
+	<item name="options_title_unsynced_peers" type="id"/>
 	<item name="bt_qr_scan_button" type="id"/>
 	<item name="bt_discover_button" type="id"/>
 	<item name="wifi_direct_qr_img" type="id"/>

@@ -1,3 +1,6 @@
+/**
+ * A separate activity with full screen to display complete nodereference
+ */
 package freenet.darknetconnector.DarknetAppConnector;
 
 import android.app.Activity;

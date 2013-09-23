@@ -55,6 +55,7 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.TextView;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class WifiDirectActivity extends Fragment {
@@ -62,6 +63,7 @@ public class WifiDirectActivity extends Fragment {
 	private static final int WIFI_DIRECT_QR_REQUEST_CODE =301;
 	public static final int WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE =303;
 	public static final int MESSAGE_NETWORK_CONNECTED = 302;
+	private static final int MESSAGE_NDEF_UI = 304;
 	private static WifiP2pManager manager;
 	public static String TAG = "WifiDirectActivity";
 	private static Channel channel;
@@ -88,8 +90,8 @@ public class WifiDirectActivity extends Fragment {
         @Override
         public void onPeersAvailable(WifiP2pDeviceList peerList) {
         	if (devicesArrayAdapter == null) {
-        		Log.d(WifiDirectActivity.TAG, "Discovery couldn't be initiated");
-        		return;
+        		Log.d(WifiDirectActivity.TAG, "Devices Array is null - reached here without discovery");
+        		devicesArrayAdapter = new DevicesArrayAdapter(uiActivity, R.layout.device_name);
         	}
         	devicesArrayAdapter.clear();
         	Log.d(WifiDirectActivity.TAG,"adding peers");
@@ -107,13 +109,13 @@ public class WifiDirectActivity extends Fragment {
     // The on-click listener for all devices in the ListViews
     private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int position, long id) {
-            Log.d("dumb","clicked");
+            Log.d(WifiDirectActivity.TAG,"clicked to connect to a peer");
             friendDevice = devicesArrayAdapter.getDevice(position);
             manager.removeGroup(channel, new ActionListener() {
 
                 @Override
                 public void onSuccess() {
-                	Log.d("dumb","removing group");
+                	Log.d(WifiDirectActivity.TAG,"removing group");
                     // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
                 	if (!groupRunningWithMeAsGroupOwner) connectToFriend(friendDevice);
                 	
@@ -131,6 +133,7 @@ public class WifiDirectActivity extends Fragment {
         }
     };
     private void connectToFriend(WifiP2pDevice device) {
+    	if (device == null) return;
         WifiP2pConfig config = new WifiP2pConfig();
         config.deviceAddress = device.deviceAddress;
         config.groupOwnerIntent = 0; 
@@ -139,7 +142,7 @@ public class WifiDirectActivity extends Fragment {
 
             @Override
             public void onSuccess() {
-            	Log.d("dumb","starting connection");
+            	Log.d(WifiDirectActivity.TAG,"starting connection");
             	friendDevice = null;
                 // WiFiDirectBroadcastReceiver will notify us. Ignore for now.
             }
@@ -169,17 +172,17 @@ public class WifiDirectActivity extends Fragment {
 				// We are the group owner of this connection
 				groupRunningWithMeAsGroupOwner = true;
     			myIP = info.groupOwnerAddress.getHostAddress();
-    			Log.d("dumber than dumb", myIP);
+    			Log.d(WifiDirectActivity.TAG, "myIP "+ myIP);
     			try {
     				groupOwnerAddress = InetAddress.getByName(myIP);
-    				Log.d("dumber than dumb", myIP);
     			} catch (UnknownHostException e) {
     				Log.e(WifiDirectActivity.TAG,"Impossible to arrive here",e);
     			}
 				manager.requestGroupInfo(channel, new GroupInfoListener() {
     				@Override
     				public void onGroupInfoAvailable(WifiP2pGroup group) {
-    	    			passkey = group.getPassphrase();
+    	    			if (group==null) return;
+    					passkey = group.getPassphrase();
     	    			mySSID = group.getNetworkName();
     	    			showQR();
     	    			Log.d(WifiDirectActivity.TAG, "passkey --- "+ passkey);
@@ -188,15 +191,16 @@ public class WifiDirectActivity extends Fragment {
     				}
     			});
 				if (clientThread!=null) clientThread.cancel();
-				if (serverThread==null) {
+				clientThread = null;
+				if (serverThread!=null) serverThread.cancel();
 					serverThread = new ServerThread(groupOwnerAddress);
 					serverThread.start();
-				}
 				Log.d(WifiDirectActivity.TAG,"server started with me as group owner");
 			}
 			else if (info.groupFormed) {
 				// We are not the group owner but we know the group owner ip
 				if (serverThread!=null) serverThread.cancel();
+				serverThread = null;
 				if (clientThread!=null) clientThread.cancel();
 				clientThread = new ClientThread(groupOwnerAddress);
 				clientThread.start();
@@ -218,11 +222,15 @@ public class WifiDirectActivity extends Fragment {
 			signal = passkey +signal +MAC_ID+signal+mySSID + signal + myIP;
 		else return;
 		int[] pixels = QRDisplayActivity.generateQR(signal,dimension);
-		Log.d("dumber than dumb", myIP);
+		Log.d(WifiDirectActivity.TAG, myIP);
 		Bitmap bitmap = Bitmap.createBitmap(dimension,dimension, Bitmap.Config.ARGB_8888);
         bitmap.setPixels(pixels, 0, dimension, 0, 0, dimension, dimension);
         ImageView imageview = (ImageView)uiActivity.findViewById(R.id.wifi_direct_qr_img);
         imageview.setImageBitmap(bitmap);
+        TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+        if (DarknetAppConnector.isNfcEnabled==true)
+			text.setText("Ready - Bring devices back to back if peer has Nfc Enabled");
+		else text.setText("Scan QR (faster) or use conventional discovery process");
 	}
 	private class DevicesArrayAdapter extends ArrayAdapter<String>{
 		private ArrayAdapter<WifiP2pDevice> availablePeers;
@@ -235,7 +243,14 @@ public class WifiDirectActivity extends Fragment {
         	availablePeers.add(device);
         }
         public WifiP2pDevice getDevice(int position) {
-        	return availablePeers.getItem(position);
+        	WifiP2pDevice device = null;
+        	try {
+        		device = availablePeers.getItem(position);
+        	}
+        	catch(IndexOutOfBoundsException e) {
+        		Log.e(WifiDirectActivity.TAG,"Peer is disappearing", e);
+        	}
+        	return device;
         }
         @Override
         public void clear() {
@@ -267,6 +282,8 @@ public class WifiDirectActivity extends Fragment {
 	@Override
 	public void onStart() {
 		super.onStart();
+		TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+		text.setText("Initializing");
         if(receiver==null) {
         	receiver = new MyBroadcastReceiver();
         	uiActivity.registerReceiver(receiver, intentFilter);
@@ -323,6 +340,7 @@ public class WifiDirectActivity extends Fragment {
 	            	groupRunningWithMeAsGroupOwner = false;
 	            	// Reach here if our group is destroyed
 	            	if (friendDevice != null) connectToFriend(friendDevice);
+	            	
 	            }
 
 	        } else if (WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION.equals(action)) {
@@ -343,6 +361,7 @@ public class WifiDirectActivity extends Fragment {
 	        	Log.d(TAG,WifiManager.EXTRA_NETWORK_INFO);
 	        	if (info.isConnected() && wifiHelper!=null && wifiHelper.isCorrectAP()) {
 	        		if (clientThread!=null) clientThread.cancel();
+	        		clientThread = null;
 	        		InetAddress IP = wifiHelper.getIP();
 	        		if (IP!=null) {
 	        			clientThread = new ClientThread(IP);
@@ -356,11 +375,13 @@ public class WifiDirectActivity extends Fragment {
 		@Override
         public void handleMessage(Message msg) {
 			if (msg.arg1 == WifiDirectActivity.MESSAGE_NETWORK_CONNECTED) {
-				Log.d("dumb","got message");
+				Log.d(WifiDirectActivity.TAG,"got message");
 				if (wifiHelper!=null && wifiHelper.isCorrectAP()) {
-
+					TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+					text.setText("Connected - Transferring noderefs ");
 					Log.d(TAG,"check 1");
 	        		if (clientThread!=null) clientThread.cancel();
+	        		clientThread = null;
 	        		Log.d(TAG,"check 2");
 	        		InetAddress IP = wifiHelper.getIP();
 	        		Log.d(TAG,"check 3");
@@ -370,7 +391,25 @@ public class WifiDirectActivity extends Fragment {
 	        		}
 	        	}
 			}
+			else if (msg.arg1 == DarknetAppConnector.MESSAGE_SUCCESSFUL_EXCHANGE){
+				TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+				boolean res = (Boolean) msg.obj;
+				if (res) {
+					text.setText("Exchange Successful and Connection Closed");
+					closeActivity();
+				}
+				else { 
+					text.setText("Exchange Cancelled");
+					restartActivity();
+				}
+			}
+			else if (msg.arg1 == WifiDirectActivity.MESSAGE_NDEF_UI) {
+				TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+				text.setText("Connecting - Please Wait ");
+			}
 			else if (msg.arg1 == WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE) {
+				TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+				text.setText("Connecting - Please Wait ");
 				if (manager!=null && channel!=null) {
 					final String signal = (String)msg.obj;
 					manager.removeGroup(channel, new ActionListener() {
@@ -384,11 +423,15 @@ public class WifiDirectActivity extends Fragment {
 								wifiHelper.start();
 								groupStartingWithMeAsClient = true;
 								msg2.arg1 = WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1;
+								// crappy code
+								// Assuming our server would be removed in 500ms
 								handler.sendMessageDelayed(msg2, 500);
 								
 							}
-							else Log.d(TAG,"Couldn't remove group");
-							
+							else {
+								TextView text = (TextView) uiActivity.findViewById(R.id.wifi_direct_title_new_devices);
+								text.setText("Connection Failed - Couldn't remove group");
+							}
 						}
 
 						@Override
@@ -399,6 +442,8 @@ public class WifiDirectActivity extends Fragment {
 							wifiHelper.start();
 							groupStartingWithMeAsClient = true;
 							msg2.arg1 = WifiDirectActivity.WIFI_DIRECT_DATA_RECEIVED_REQUEST_CODE+1;
+							// crappy code
+							//  Assuming our server would be removed in 500ms
 							handler.sendMessageDelayed(msg2, 500);
 						}
 						
@@ -410,13 +455,18 @@ public class WifiDirectActivity extends Fragment {
 				Log.d(TAG,"scan result -- "+ signal);
 				String[] splitSignal = signal.split("-->>");
 				if (splitSignal.length != 4) return;
-				Log.d("dumber than dumb", splitSignal[3]);
+				Log.d(WifiDirectActivity.TAG, splitSignal[3]);
 				if (wifiHelper!=null) wifiHelper.add(splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
 				else wifiHelper = new LegacyWifiHelper(uiActivity,splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
 				if (wifiHelper!=null) synchronized(wifiHelper) {
 					wifiHelper.notify();
 				}
 			}
+		}
+
+		private void restartActivity() {
+			closeActivity();
+			createServer();
 		}
 	}
 	private void createServer() {
@@ -477,13 +527,15 @@ public class WifiDirectActivity extends Fragment {
 	}
 	public static boolean closeActivity() {
 		if (serverThread!=null) serverThread.cancel();
+		serverThread = null;
 		if (clientThread!=null) clientThread.cancel();
+		clientThread = null;
 		if (manager!=null) {
 			manager.cancelConnect(channel, null);
 			manager.removeGroup(channel, null);
 		}
 		if (wifiHelper!=null) wifiHelper.finish();
-		DarknetAppConnector.fragmentManager.popBackStack();
+		wifiHelper = null;
 		Log.d(WifiDirectActivity.TAG,"closed the wifi direct fragment");
 		return successful;
 	} 
@@ -575,7 +627,7 @@ public class WifiDirectActivity extends Fragment {
 				Log.d(TAG,"scan result -- "+ signal);
 				String[] splitSignal = signal.split("-->>");
 				if (splitSignal.length != 4) return;
-				Log.d("dumber than dumb", splitSignal[3]);
+				Log.d(WifiDirectActivity.TAG, splitSignal[3]);
 				if (wifiHelper!=null) wifiHelper.add(splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
 				else wifiHelper = new LegacyWifiHelper(uiActivity,splitSignal[2],splitSignal[0],splitSignal[3],splitSignal[1]);
 				if (wifiHelper!=null) synchronized(wifiHelper) {
@@ -615,6 +667,8 @@ public class WifiDirectActivity extends Fragment {
 	}
 
 	public void onNdefPushComplete(NfcEvent event) {
-		
+		Message msg = new Message();
+		msg.arg1 = WifiDirectActivity.MESSAGE_NDEF_UI;
+		handler.sendMessage(msg);
 	}
 }

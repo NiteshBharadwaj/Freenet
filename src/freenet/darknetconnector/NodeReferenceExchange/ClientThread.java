@@ -11,6 +11,7 @@ import android.bluetooth.BluetoothSocket;
 import android.util.Log;
 
 public class ClientThread extends Thread {
+	private static final String TAG = "ClientThread";
 	private Socket socket;
 	private BluetoothSocket bsocket;
 	private int port = 7826;
@@ -26,7 +27,7 @@ public class ClientThread extends Thread {
 		// Get a BluetoothSocket to connect with the given BluetoothDevice
 		this.bluetoothAdapter = bluetoothAdapter;
 	     try {
-	    	 Log.d("dumb","acquiring client socket");
+	    	 Log.d(ClientThread.TAG,"acquiring client socket");
 	    	Method m = device.getClass().getMethod("createRfcommSocket", new Class[] {int.class});
 	    	bsocket = (BluetoothSocket) m.invoke(device, 9);
 	    	//bsocket = device.createRfcommSocketToServiceRecord(BluetoothActivity.APP_UUID);

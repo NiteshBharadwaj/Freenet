@@ -8,44 +8,45 @@ package freenet.darknetconnector.DarknetAppConnector;
  */
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.net.URL;
-
-import org.apache.commons.io.FileUtils;
 
 import freenet.darknetconnector.DarknetAppConnector.R;
 
 import android.app.Activity;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
 import android.os.Message;
-import android.os.StrictMode;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.util.Log;
 
 public class MDNSReceiver extends Thread {
 	
-    	public static String name;
-    	public static String ip;
-    	public static int port;
-    	public static String pin;
+    	private static final String TAG = "MDNSReceiver";
+		private String name;
+    	private String ip;
+    	private int port;
+    	private String pin;
     	public MDNSReceiver(String name, String ip, int port, String pin) {
     			this.name = name;
         		this.ip = ip;
         		this.port = port;
         		this.pin = pin;
-        		Log.d("dumb",pin);
+        		Log.d(MDNSReceiver.TAG,pin);
     	}
     	public void run() {
-    		if (DarknetAppConnector.configured && HomeNode.getName().equals(name)) {
+    		if (DarknetAppConnector.configured && HomeNode.check(name)) {
     			//We reach here if newly discovered MDNS is same as our homenode
-    			// TODO: Add pin to homenode and also check if the pins match
+    			if (!HomeNode.check(name,pin)) {
+    				// Pin provided last time doesn't match with presently provided pin
+    				// This might be an attack or old certificate might have expired or old certificate might have been replaced by the user
+    				// TODO: Ask user to confirm
+    				// If user confirms
+    				HomeNode.setPin(pin);
+    			}
+    			if (HomeNode.check(name, port, ip, pin)) Log.d(MDNSReceiver.TAG,"All is super fine");
+    			HomeNode.setIP(ip);
+    			HomeNode.setPort(port);
+    			// If we have new references/ it's been long - connect to homeNode
     			if ((DarknetAppConnector.newDarknetPeersCount!=DarknetAppConnector.newDarknetPeersCountPrev && DarknetAppConnector.newDarknetPeersCount>0) || System.currentTimeMillis()-DarknetAppConnector.lastSynched > 60*60*60*1000) {
     				Runnable r = new ConnectionWithServer(ip,port,pin,name,false);
     				new Thread(r).start();
@@ -55,14 +56,18 @@ public class MDNSReceiver extends Thread {
 				boolean change = false;
 				if (DarknetAppConnector.configured)
 					change = true;
-				Log.d("dumb","Raising Intent");
+				Log.d(MDNSReceiver.TAG,"Raising Intent");
 				raiseIntent(change);
 			}
     	}
 		public void raiseIntent(boolean change) {
+			HomeNode.setTemp(name,port,ip,pin);
 			Activity uiActivity = DarknetAppConnector.activity;
 			String text  = uiActivity.getString(R.string.main_screen_connect1)+" " + name+ " " + uiActivity.getString(R.string.main_screen_connect2);
 			if (change) text = uiActivity.getString(R.string.main_screen_change)+" " + name;
+			if (DarknetAppConnector.fragmentManager.getBackStackEntryCount()>0) {
+				DarknetAppConnector.fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+			}
 			Fragment fragment = AuthorizationFragment.instantiate(text, DarknetAppConnector.handler);
 			FragmentTransaction transaction = DarknetAppConnector.fragmentManager.beginTransaction();
 			transaction.add(R.id.fragment_view, fragment,AuthorizationFragment.TAG);
@@ -72,6 +77,7 @@ public class MDNSReceiver extends Thread {
 		
 		public static void handleResult(boolean result) {
 	       	 if (result) {
+	       		 		HomeNode.finalizeHome();
 	       		 		File file = new File(DarknetAppConnector.nodeRefFileName);
 	       		 		if (!file.exists()) {
 	       		 			try {
@@ -80,9 +86,9 @@ public class MDNSReceiver extends Thread {
 									e.printStackTrace();
 								}
 	       		 		}
-	       		 		Log.d("dumb",ip);
-	       		 		Log.d("port",""+port);
-	       		 		Runnable r = new ConnectionWithServer(ip,port,pin,name,true);
+	       		 		Log.d(MDNSReceiver.TAG,HomeNode.getIP());
+	       		 		Log.d(MDNSReceiver.TAG,""+HomeNode.getPort());
+	       		 		Runnable r = new ConnectionWithServer(HomeNode.getIP(),HomeNode.getPort(),HomeNode.getPin(),HomeNode.getName(),true);
 	       		 		new Thread(r).start();
 	       		 	}
 	       	 else {

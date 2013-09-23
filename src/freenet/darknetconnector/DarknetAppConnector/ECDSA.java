@@ -5,28 +5,17 @@
 package freenet.darknetconnector.DarknetAppConnector;
 
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.Signature;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,10 +25,6 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
  * @author Illutionist
  */
 public class ECDSA {
-    private static PublicKey publickey;
-    private static PrivateKey privatekey;
-    private static boolean generated = false;
-    private static Properties prop = new Properties();    
     
     public static boolean verify(String data,byte[] signature,byte[] publicKey) {
         boolean verify = false;
@@ -69,7 +54,4 @@ public class ECDSA {
         }
         return verify;
     }
-    
-
-    
 }

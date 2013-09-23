@@ -24,6 +24,7 @@ import android.util.Log;
 
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class NfcHandler implements CreateNdefMessageCallback, OnNdefPushCompleteCallback {
+	private static final String TAG = "NfcHandler";
 	private Activity activity;
 	private NfcAdapter nfcAdapter;
 	private IntentFilter[] intentFiltersArray;
@@ -99,8 +100,8 @@ public class NfcHandler implements CreateNdefMessageCallback, OnNdefPushComplete
 	    byte[] value = recs[0].getPayload();
 	    // record 0 contains the MIME type, record 1 is the AAR, if present
 	    String str = new String(value,"UTF-8");
-	    Log.d("dumb",str+ "-->>received");
-	    Log.d("dumb",intent+ "-->>received");
+	    Log.d(NfcHandler.TAG,str+ "-->>received");
+	    Log.d(NfcHandler.TAG,intent+ "-->>received");
 	    BluetoothActivity fragment = (BluetoothActivity) DarknetAppConnector.fragmentManager.findFragmentByTag(BluetoothActivity.TAG);
 		if (fragment!=null)  {
 		    Message msg2 = new Message();

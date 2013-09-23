@@ -67,12 +67,11 @@ public class BluetoothActivity extends Fragment {
 	private OnItemClickListener mDeviceClickListener = new OnItemClickListener() {
         public void onItemClick(AdapterView<?> av, View v, int position, long id) {
             // Cancel discovery because it's costly and we're about to connect
-            Log.d("dumb","clicked");
         	bluetoothAdapter.cancelDiscovery();
             String info = ((TextView) v).getText().toString();
             String address = info.substring(info.length() - 17);
             BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
-            Log.d("dumb","becoming client");
+            Log.d(BluetoothActivity.TAG,"becoming client");
             clientThread = new ClientThread(device,bluetoothAdapter);
             clientThread.start();
             if (serverThread!=null) serverThread.cancel();
@@ -123,6 +122,8 @@ public class BluetoothActivity extends Fragment {
 				activityStarted = true;
 				startServer();
 			}*/
+		 TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+		 text.setText("Initializing");
 		 if (activityStarted && serverThread==null)
 		        startServer(); 
 		 else if (activityStarted && serverThread!=null) {
@@ -133,18 +134,18 @@ public class BluetoothActivity extends Fragment {
 	@Override
 	public void onActivityResult(int requestCode,
                                      int resultCode, Intent data) {
-        Log.d("dumb","activity result");
+        Log.d(BluetoothActivity.TAG,"activity result");
         if (requestCode == BluetoothActivity.BLUETOOTH_DISCOVERY_ID) {
 
-   		 Log.d("dumb","activity result 1"); 
+   		 Log.d(BluetoothActivity.TAG,"Bluetooth Discovability"); 
         	if (resultCode == FragmentActivity.RESULT_CANCELED) {
         		 closeActivity();
-        		 Log.d("dumb","activity result 2");
+        		 Log.d(BluetoothActivity.TAG,"Undiscoverable");
         	}
         	else if (resultCode == 120) {
         		activityStarted = true;
         		startServer();
-        		 Log.d("dumb","activity result 3");
+        		Log.d(BluetoothActivity.TAG,"Discoverable for 120 seconds");
         	}
         }
         else if (requestCode == BluetoothActivity.REQUEST_ENABLE_BT) {
@@ -180,7 +181,7 @@ public class BluetoothActivity extends Fragment {
 			    Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
 			    discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 120);
 			    uiActivity.startActivityForResult(discoverableIntent, BluetoothActivity.BLUETOOTH_DISCOVERY_ID);
-			    Log.d("dumb","trying to make discoverable");
+			    Log.d(BluetoothActivity.TAG,"trying to make discoverable");
 			}
 			return true;
 		}
@@ -196,7 +197,10 @@ public class BluetoothActivity extends Fragment {
 			if (isBluetoothPreviouslyDisabled)
 				bluetoothAdapter.disable();
 		}
-		DarknetAppConnector.fragmentManager.popBackStack();
+		//DarknetAppConnector.fragmentManager.popBackStack();
+		serverThread = null;
+		clientThread = null;
+		connectionThread = null;
 		return isSuccessful;
 	}
 
@@ -230,7 +234,7 @@ public class BluetoothActivity extends Fragment {
 		if (serverThread!=null) serverThread.cancel();
         serverThread = new ServerThread(bluetoothAdapter);
         serverThread.start();
-        Log.d("dumb","server started");
+        Log.d(BluetoothActivity.TAG,"server started");
         showQRofMAC();
         setListeners();
 		if (discoveryResultReceiver!=null) {
@@ -261,6 +265,11 @@ public class BluetoothActivity extends Fragment {
         
         filter = new IntentFilter(BluetoothAdapter.ACTION_SCAN_MODE_CHANGED);
         uiActivity.registerReceiver(discoveryResultReceiver,filter);
+        
+        TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+        if (DarknetAppConnector.isNfcEnabled==true)
+			text.setText("Ready - Bring devices back to back if peer has Nfc Enabled");
+		else text.setText("Ready - Scan QR (faster) or use conventional discovery process");
 	}	
 	
 	private void setListeners() {
@@ -293,6 +302,8 @@ public class BluetoothActivity extends Fragment {
 		@Override
         public void handleMessage(Message msg) {
 			if (msg.arg1 == BluetoothActivity.BT_DATA_RECEIVED_REQUEST_CODE) {
+				TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+				text.setText("Connecting - Please Wait");
 				String MAC_ID = (String) msg.obj;
 				bluetoothAdapter.cancelDiscovery();
 				BluetoothDevice device = null;
@@ -303,11 +314,30 @@ public class BluetoothActivity extends Fragment {
 					Log.d(BluetoothActivity.TAG,"not a mac-scan");
 					return;
 				}
-	            Log.d("dumb","becoming client");
+	            Log.d(BluetoothActivity.TAG,"becoming client");
 	            clientThread = new ClientThread(device,bluetoothAdapter);
 	            clientThread.start();
 	            if (serverThread!=null) serverThread.cancel();
 			}
+			else if (msg.arg1 == DarknetAppConnector.MESSAGE_SUCCESSFUL_EXCHANGE) {
+				TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+				boolean res = (Boolean) msg.obj;
+				if (res) {
+					text.setText("Exchange Successful and Connection Closed");
+					closeActivity();
+				}
+				else {
+					text.setText("Exchange Cancelled");
+					restartActivity();
+				}
+
+				isSuccessful = true;
+			}
+		}
+
+		private void restartActivity() {
+			closeActivity();
+			startServer();
 		}
 	}
 	private void showQRofMAC() {
@@ -344,48 +374,54 @@ public class BluetoothActivity extends Fragment {
 	        if (BluetoothDevice.ACTION_FOUND.equals(action)) {
 	            BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 	            devicesArrayAdapter.add(device.getName() + "\n" + device.getAddress());
-	            Log.d("dumb","found a device");
+	            Log.d(BluetoothActivity.TAG,"found a device");
 	        }
 	        else if (BluetoothDevice.ACTION_ACL_CONNECTED.equals(action)) {
-	        	Log.d("dumb","present state -  connected to a device");
+	        	Log.d(BluetoothActivity.TAG,"present state -  connected to a device");
+	        	TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+	    		text.setText("Connected - Trying to exchange noderef");
+	        	
 	        }
 	        else if (BluetoothDevice.ACTION_ACL_DISCONNECTED.equals(action)) {
-	        	Log.d("dumb","present state -  disconnected to a device");
+	        	Log.d(BluetoothActivity.TAG,"present state -  disconnected to a device");
+	        	TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+	        	if (!isSuccessful) 
+	        		text.setText("Disconnected - Try restarting bluetooth if this happens often");
 	        	if (connectionThread!=null)
 	        	connectionThread.cancel();
 	        }
 	        else if (BluetoothDevice.ACTION_ACL_DISCONNECT_REQUESTED.equals(action)) {
-	        	Log.d("dumb","present state -  disconnect requested");
+	        	Log.d(BluetoothActivity.TAG,"present state -  disconnect requested");
 	        }
 	        else if (BluetoothAdapter.ACTION_DISCOVERY_FINISHED.equals(action)) {
 	        	updatePeers();
 	        }
 	        else if (BluetoothAdapter.ACTION_DISCOVERY_STARTED.equals(action)) {
-	        	Log.d("dumb","discovery started");
+	        	Log.d(BluetoothActivity.TAG,"discovery started");
 	        }
 	        else if (BluetoothAdapter.ACTION_SCAN_MODE_CHANGED.equals(action)) {
 	        	if (BluetoothAdapter.EXTRA_SCAN_MODE.equals(BluetoothAdapter.SCAN_MODE_CONNECTABLE) && BluetoothAdapter.EXTRA_PREVIOUS_SCAN_MODE.equals(BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE)) {
-	        		Log.d("dumb","Undiscoverable, connectable");
+	        		Log.d(BluetoothActivity.TAG,"Undiscoverable, connectable");
 	        	}
 	        	else {
-	        		Log.d("dumb","Discoverablity status changed");
+	        		Log.d(BluetoothActivity.TAG,"Discoverablity status changed");
 	        	}
 	        }
 	        else if (BluetoothAdapter.ACTION_STATE_CHANGED.equals(action)) {
 	        	if (BluetoothAdapter.EXTRA_CONNECTION_STATE.equals(BluetoothAdapter.STATE_CONNECTING)) {
-	        		Log.d("dumb","present state -  connecting");
+	        		Log.d(BluetoothActivity.TAG,"present state -  connecting");
 	        	}
 	        	else if (BluetoothAdapter.EXTRA_CONNECTION_STATE.equals(BluetoothAdapter.STATE_CONNECTED)){
-	        		Log.d("dumb","present state -  connected");
+	        		Log.d(BluetoothActivity.TAG,"present state -  connected");
 	        	}
 	        	else if (BluetoothAdapter.EXTRA_CONNECTION_STATE.equals(BluetoothAdapter.STATE_DISCONNECTED)){
-	        		Log.d("dumb","present state -  disconnected");
+	        		Log.d(BluetoothActivity.TAG,"present state -  disconnected");
 	        	}
 	        	else if (BluetoothAdapter.EXTRA_CONNECTION_STATE.equals(BluetoothAdapter.STATE_DISCONNECTING)){
-	        		Log.d("dumb","present state -  disconnecting");
+	        		Log.d(BluetoothActivity.TAG,"present state -  disconnecting");
 	        	}
 	        	else {
-	        		Log.d("dumb","present state -  unknown");
+	        		Log.d(BluetoothActivity.TAG,"present state -  unknown");
 	        	}
 	        }
 		}
@@ -399,7 +435,7 @@ public class BluetoothActivity extends Fragment {
 				connectionThread.cancel();
 			}
 			
-			Log.d("dumb","starting connection thread");
+			Log.d(BluetoothActivity.TAG,"starting connection thread");
 			connectionThread = new ConnectionThread(socket);
 			connectionThread.start();
 		}
@@ -414,7 +450,7 @@ public class BluetoothActivity extends Fragment {
 				clientThread.cancel();
 			}
 			
-			Log.d("dumb","Starting connecjtion thread");
+			Log.d(BluetoothActivity.TAG,"Starting connection thread");
 			connectionThread = new ConnectionThread(socket);
 			connectionThread.start();
 		}
@@ -437,6 +473,8 @@ public class BluetoothActivity extends Fragment {
 	
 	@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 	public void onNdefPushComplete(NfcEvent event) {
+		TextView text = (TextView) uiActivity.findViewById(R.id.bluetooth_title_new_devices);
+		text.setText("Connecting - Please Wait");
 	}
 
 }

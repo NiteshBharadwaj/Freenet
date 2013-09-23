@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">Darknet Connector</string>
-    <string name="main_screen_notconfigured">Please connect to the home network either by Wi-Fi or USB</string>
+    <string name="main_screen_notconfigured">Please connect to the home network </string>
     <string name="main_screen_connect1">Do you want to make</string>
     <string name="main_screen_connect2">as the home freenet node</string>
     <string name="main_screen_change">Do you want to change your home freenet node to</string>
@@ -10,6 +10,8 @@
     <string name="verify_true">Accept </string>
     <string name="verify_false">Reject </string>
     <string name="exchange">Exchange Nodereference</string>
+    <string name="options_title"> Unsynhcronized peers - </string>
+    <string name="options_title_no_peers"> No newly added peers </string>
     <string name="menu_settings">Settings</string>
 	<string name="exchange_options">Exchange darknet node references via: </string>
 	<string name="authorization_text">Do you want to continue? </string>

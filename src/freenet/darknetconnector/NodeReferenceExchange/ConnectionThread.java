@@ -24,6 +24,7 @@ import freenet.support.io.LineReadingInputStream;
 
 public class ConnectionThread extends Thread {
 	private static final String REQUEST_REFERENCE_EXCHANGE = "Request Reference Exchange";
+	private static final String TAG = "ConnectionThread";
 	private LineReadingInputStream input = null;
 	private OutputStream output = null;
 	private Socket socket;
@@ -65,7 +66,7 @@ public class ConnectionThread extends Thread {
 				input = new LineReadingInputStream(is);
 				output = bsocket.getOutputStream();
 			} catch (IOException e) {
-				Log.e("dumb","couldn't get input stream",e);
+				Log.e(ConnectionThread.TAG,"couldn't get input stream",e);
 				BluetoothActivity.closeActivity();
 			}
 		}
@@ -90,7 +91,7 @@ public class ConnectionThread extends Thread {
 			if (input==null) throw new IOException();
 			Random randomGenerator = new Random();
 			String command = input.readLine(32768, 128, true);
-			Log.d("dumb","command -" + command);
+			Log.d(ConnectionThread.TAG,"command -" + command);
 			String line = null;
 			String friendReference = "";
 			String fromSocket = null;
@@ -109,7 +110,7 @@ public class ConnectionThread extends Thread {
 					}
 					while((fromSocket = input.readLine(32768, 128, true)) != null) {
 						friendReference = friendReference.concat(fromSocket+'\n');
-					    Log.d("dumb","friendRef +---" +fromSocket);
+					    Log.d(ConnectionThread.TAG,"friendRef +---" +fromSocket);
 						if (fromSocket.endsWith("End"))  {
 							doneReading = true;
 							break;

@@ -22,11 +22,15 @@ public class ConnectionStateReceiver extends BroadcastReceiver {
 			if (info.isConnected()) {
 				if (DarknetAppConnector.class == null || DarknetAppConnector.fragmentManager == null) return;
 				Fragment fragment = (Fragment) DarknetAppConnector.fragmentManager.findFragmentByTag(WifiDirectActivity.TAG);
+				Message msg = new Message();
 				if (fragment!=null) {
-					Log.d(TAG,"network state changed");
-					Message msg = new Message();
 					msg.arg1 = WifiDirectActivity.MESSAGE_NETWORK_CONNECTED;
+					Log.d(TAG,"network state changed");
 					WifiDirectActivity.handler.sendMessage(msg);
+				}
+				else {
+					msg.arg1 = DarknetAppConnector.MESSAGE_NETWORK_CONNECTED;
+					DarknetAppConnector.handler.sendMessage(msg);
 				}
 						
 			}

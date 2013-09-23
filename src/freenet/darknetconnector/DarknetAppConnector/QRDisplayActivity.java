@@ -1,3 +1,6 @@
+/**
+ * A separate activity with full screen to display the QR image of the complete reference
+ */
 package freenet.darknetconnector.DarknetAppConnector;
 
 import java.io.BufferedReader;
@@ -17,7 +20,6 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 
@@ -42,7 +44,6 @@ public class QRDisplayActivity extends Activity {
 				String line = null;
 				while ((line = br.readLine()) != null) {
 					ref = ref.concat(line+'\n');
-					Log.d("dumb","here-- " +line);
 				}
 				
 			} catch (FileNotFoundException e) {

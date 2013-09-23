@@ -10,18 +10,13 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import javax.jmdns.JmDNS;
 import javax.jmdns.ServiceEvent;
 import javax.jmdns.ServiceListener;
 
-
 import android.content.Context;
-import android.content.Intent;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
@@ -30,6 +25,7 @@ import android.util.Log;
 
 
 public class MDNSClient {
+	protected static final String TAG = "MDNSClient";
 	WifiManager.MulticastLock lock;
 	Handler handler = new android.os.Handler();
 	private String type = "_darknetAppServer._tcp.local.";
@@ -68,7 +64,10 @@ public class MDNSClient {
         lock.release();
     }
     
-    class AsynchronousExecutor extends AsyncTask<JmDNS, Void,JmDNS> {
+    public boolean isListening() {
+    	return !(listener==null);
+    }
+	class AsynchronousExecutor extends AsyncTask<JmDNS, Void,JmDNS> {
     	
         private byte[] int2Bytes(int IP) {
 			byte[] inetBytes = new byte[] {
@@ -83,15 +82,16 @@ public class MDNSClient {
          * Listen for MDNS broadcasts. If we get hold of a broadcast check for signature
          * If signature matches, raise Intent through MDNSReceiver Class
          * TODO: Verify if the name contains Freenet. If it doesn't ignore the broadcast instead of signature verification
-         * TODO: Change the dumb function to do the same task onPostExecute 
          * TODO: Exception Handling
          * @see android.os.AsyncTask#doInBackground(Params[])
          */
 		@Override
 		protected JmDNS doInBackground(JmDNS... params) {
 				 WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+
 				 WifiInfo connectionInfo = wifiManager.getConnectionInfo();
 					if(connectionInfo == null) {
+						listener = null;
 						return null;
 					}
 
@@ -99,19 +99,32 @@ public class MDNSClient {
 					InetAddress myAddress;
 					try {
 					myAddress = InetAddress.getByAddress(int2Bytes(WiFiIP));
+					Log.d(MDNSClient.TAG,myAddress.getHostAddress());
+					if (myAddress.getHostAddress().equals("0.0.0.0")) {
+						listener = null;
+						return null;
+					}
+					lock = wifi.createMulticastLock("lock");
+			        lock.setReferenceCounted(true);
 					lock.acquire();
 					jmdns = JmDNS.create(myAddress);
 					}
 					catch (UnknownHostException e) {
 						//Ignore as of now
+						Log.d(MDNSClient.TAG,"Unknown Host - jmdns not created");
 					} catch (IOException e) {
 						//Ignore as of now
+						Log.d(MDNSClient.TAG,"IOException - jmdns not created");
 					}
-					if (jmdns==null) return null;
+					if (jmdns==null) {
+						Log.d(MDNSClient.TAG,"jmdns not created");
+						return null;
+					}
 		            jmdns.addServiceListener(type, listener = new ServiceListener() {
 
 		                @Override
 		                public void serviceResolved(ServiceEvent ev) {
+		                	Log.d(MDNSClient.TAG,"An MDNS service claiming as " + type +" has been resolved");
 		                    String additions = "";
 		                    if (ev.getInfo().getInetAddresses() != null && ev.getInfo().getInetAddresses().length > 0) {
 		                        additions = ev.getInfo().getInetAddresses()[0].getHostAddress();
@@ -134,24 +147,20 @@ public class MDNSClient {
 		                    for (int i=pubkeyEndPointer;i!=signal.length-4;i++) {
 		                        pinBytes[i-pubkeyEndPointer] = signal[i];
 		                    }
-		                    
-		                    Log.d("dumb","+verification" + ev.getInfo().getName());
 		                    String pin = "";
 							try {
 								pin = new String(pinBytes,"UTF-8");
-								Log.d("dumb","pin  "+pin);
+								Log.d(MDNSClient.TAG,"pin  "+pin);
 							} catch (UnsupportedEncodingException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 							String data2verify = ev.getInfo().getName()+pin;
-							Log.d("dumb",data2verify);
+							Log.d(MDNSClient.TAG,data2verify);
 							boolean verification = ECDSA.verify(data2verify, signature, publickey);
-							Log.d("dumb",Boolean.toString(verification));
+							Log.d(MDNSClient.TAG,"Verification Result "+ Boolean.toString(verification));
 							String[] split = pin.split("pin -=");
 							String[] splite = split[1].split("=-");
 							pin = splite[0];
-							Log.d("dumb",pin);
 		                    if (verification)  {
 		                    	MDNSReceiver rec = new MDNSReceiver(ev.getInfo().getName(),additions,ev.getInfo().getPort(),pin);
 								rec.start();

@@ -11,6 +11,7 @@ import android.net.wifi.WifiManager;
 import android.util.Log;
 
 public class LegacyWifiHelper extends Thread {
+	private static final String TAG = "LegacyWifiHelper";
 	private String SSID;
 	private Context context;
 	private String passkey;
@@ -71,8 +72,8 @@ public class LegacyWifiHelper extends Thread {
         wifiManager.disconnect();
 	}
 	private void changeNetwork() throws UnknownHostException {
-		Log.d("dumb","starting stuff");
-        Log.d("dumb",prevSSID);
+		Log.d(LegacyWifiHelper.TAG,"starting stuff");
+        Log.d(LegacyWifiHelper.TAG,prevSSID);
 		InetAddress IP = null;
 		IP = InetAddress.getByName(IPString);
 		if (IP==null) return;
@@ -94,15 +95,15 @@ public class LegacyWifiHelper extends Thread {
 		List<WifiConfiguration> list = wifiManager.getConfiguredNetworks();
 		for( WifiConfiguration i : list ) {
 		    if(i.SSID != null && (i.SSID.equals("\"" + SSID+ "\"") || i.SSID.equals(SSID))) {
-		    	 Log.d("dumb","came here");
 		    	 wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE); 
 		         wifiManager.enableNetwork(i.networkId, true);
+		         Log.d(LegacyWifiHelper.TAG,"Requested OS to connect to "+ i.SSID);
 		         if (!wifiManager.isWifiEnabled()) wifiManager.setWifiEnabled(true);
 		         wifiManager.reconnect();               
 		         break;
 		    }           
 		}
-		Log.d("dumb","finishing stuff");
+		Log.d(LegacyWifiHelper.TAG,"finishing stuff");
 	}
 	public boolean isCorrectSSID(String checkSSID) {
 		return checkSSID.equals("\"" + SSID+ "\"");
@@ -110,12 +111,8 @@ public class LegacyWifiHelper extends Thread {
 	
 	public boolean isCorrectAP() {
 		boolean result  = false;
-		if (getSSID().equals(SSID)) Log.d("dumb","1");
-		if (getSSID().equals("\"" + SSID+ "\"")) Log.d("dumb","2");
-		if ((getMacId().equals(MAC_ID))) Log.d("dumb","3");
-		if (getMacId().equals("\"" + MAC_ID+ "\"")) Log.d("dumb","4");
-		Log.d("expected mac",MAC_ID);
-		Log.d("dumb-  got mac", getMacId());
+		Log.d(LegacyWifiHelper.TAG,"expected mac " + MAC_ID);
+		Log.d(LegacyWifiHelper.TAG,"got mac " +  getMacId());
 		if (getSSID().equals(SSID) || getSSID().equals("\"" + SSID+ "\"")) result = true;
 		int d = hammingDistance(getMacId(),MAC_ID);
 		if (d>-1 && d<2 && result ) result = true;
@@ -136,7 +133,6 @@ public class LegacyWifiHelper extends Thread {
 		for( WifiConfiguration i : list ) {
 		    if(i.SSID != null) {
 		    	 if (i.SSID.equals("\"" + SSID+ "\"") || i.SSID.equals(SSID)) {
-		    		Log.d("dumb","came here");
 		         	wifiManager.disableNetwork(i.networkId);
 		    	 }
 		    	 if (prevSSID!=null && !prevSSID.equals("")) {
