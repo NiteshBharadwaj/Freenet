@@ -25,7 +25,7 @@ It is simply the open source zxing application (barcode scanner) modified slight
 Android SDK,
 jmdns >= 3.4.1,
 commons-io.jar,
-android-support-v4.jar for back compatibility with older android versions.
+android-support-v4.jar.
 
 Eclipse with ADT plugin installed
 
