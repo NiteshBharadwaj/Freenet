@@ -22,10 +22,10 @@ CaptureActivity library project - For bundling QRScanner of zxing with our app.
 https://github.com/NiteshBharadwaj/CaptureActivity/
 It is simply the open source zxing application (barcode scanner) modified slightly to bundle it with our app rather than it being another standalone app
 
-Android SDK
-jmdns >= 3.4.1 as dependency
-commons-io.jar
-android-support-v4.jar for back compatibility with older android versions
+Android SDK,
+jmdns >= 3.4.1,
+commons-io.jar,
+android-support-v4.jar for back compatibility with older android versions.
 
 Eclipse with ADT plugin installed
 
