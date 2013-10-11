@@ -36,8 +36,8 @@ Steps:
 4) Build the zxing project using ant and get a snapshot of core.jar
 5) Import CaptureActivity project into eclipse and add this core.jar as dependency. 
 Mark the capture activity project as library project --  Right Click on CaptureActivity project -> Properties -> Android -> isLibrary box -> Select it
-6) Add other dependencies mentioned above i.e. jmdns, commons-io. 
-android-support-v4 is generated automatically by eclipse
+6) Add other dependencies mentioned above into the freenet project i.e. jmdns, commons-io.    
+(android-support-v4 is generated automatically by eclipse)
 7) Reference CaptureActivity as referenced library -- Right click on Freenet project -> Properties -> Android -> Library -> Add CaptureActivity
 8) Run 
 
