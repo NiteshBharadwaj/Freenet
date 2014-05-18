@@ -21,7 +21,6 @@ import java.util.logging.Logger;
 
 import org.spongycastle.jce.provider.BouncyCastleProvider;
 /**
- *
  * @author Illutionist
  */
 public class ECDSA {
@@ -35,7 +34,7 @@ public class ECDSA {
             KeyFactory keyFactory = KeyFactory.getInstance("EC", "BC");
             PublicKey pubKey = keyFactory.generatePublic(pubKeySpec);
             byte[] buf = data.getBytes("UTF-8");
-            Signature sig = Signature.getInstance("SHA1withECDSA", "BC");
+            Signature sig = Signature.getInstance("SHA256withECDSA", "BC");
             sig.initVerify(pubKey);
             sig.update(buf, 0,buf.length);
             verify = sig.verify(signature);
